@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Estadísticas</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles_new.css?v=20251101-stats4">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="page-stats">
+  <header class="topbar">
+    <div class="topbar-content">
+      <h1><i class="fas fa-chart-line"></i> Estadísticas</h1>
+      <div class="top-actions">
+        <a href="index.html" class="btn"><i class="fas fa-arrow-left"></i> Volver</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 1080px; margin: 0 auto; padding-top: 16px;">
+    <section>
+      <div class="stats-filters" style="margin-bottom: 12px;">
+        <div class="filter">
+          <label>Institución</label>
+          <select id="statsInstSelect">
+            <option value="">Todas las instituciones</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label>Aula</label>
+          <select id="statsAulaSelect" disabled>
+            <option value="">Todas las aulas</option>
+          </select>
+        </div>
+        <button id="statsClearBtn" class="btn-clear">Limpiar</button>
+      </div>
+
+      <!-- Métricas resumidas -->
+      <div id="metricsRow" class="metrics-row"></div>
+
+      <div class="two-col">
+        <section class="panel" id="panelRendimiento">
+          <h3><i class="fas fa-gauge-high"></i> Rendimiento Académico General</h3>
+          <div class="big-number" id="avgGeneral">--</div>
+          <div class="progress"><span id="progressAvg" style="width:0%"></span></div>
+          <div class="substats">
+            <div><i class="fas fa-check-circle" style="color:#16a34a"></i> <span id="aprobadosCnt">0</span> Aprobados</div>
+            <div><i class="fas fa-times-circle" style="color:#dc2626"></i> <span id="desaprobadosCnt">0</span> Desaprobados</div>
+          </div>
+        </section>
+
+        <section class="panel" id="panelGenero">
+          <h3><i class="fas fa-venus-mars"></i> Distribución por Género</h3>
+          <div style="height:260px"><canvas id="genderChart"></canvas></div>
+          <div id="genderLegend" class="gender-legend"></div>
+        </section>
+      </div>
+
+      <section class="panel" id="panelAula">
+        <h3><i class="fas fa-table"></i> Estadísticas por Aula</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Aula</th>
+                <th>Total Alumnos</th>
+                <th>Masculinos</th>
+                <th>Femeninos</th>
+                <th>% Masc.</th>
+                <th>% Fem.</th>
+                <th>Edad Prom.</th>
+                <th>Prom. Notas</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyAulas"></tbody>
+          </table>
+          <div class="pager">
+            <div class="pager-left">
+              <span>Mostrar</span>
+              <select id="perPageAulas">
+                <option value="7" selected>7</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+              </select>
+              <span>registros</span>
+            </div>
+            <div class="pager-right">
+              <button id="pagerAulasPrev" class="nav-btn" type="button" aria-label="Anterior" title="Anterior"><i class="fas fa-chevron-left"></i></button>
+              <span id="pagerAulasInfo" class="pager-info">1 / 1</span>
+              <button id="pagerAulasNext" class="nav-btn" type="button" aria-label="Siguiente" title="Siguiente"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="panelMateria">
+        <h3><i class="fas fa-table"></i> Estadísticas por Materia</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Materia</th>
+                <th>Aula</th>
+                <th>Profesor</th>
+                <th>Total Notas</th>
+                <th>Promedio</th>
+                <th>Aprobados</th>
+                <th>Desaprobados</th>
+                <th>% Aprobados</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyMaterias"></tbody>
+          </table>
+          <div class="pager">
+            <div class="pager-left">
+              <span>Mostrar</span>
+              <select id="perPageMaterias">
+                <option value="7" selected>7</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+              </select>
+              <span>registros</span>
+            </div>
+            <div class="pager-right">
+              <button id="pagerMateriasPrev" class="nav-btn" type="button" aria-label="Anterior" title="Anterior"><i class="fas fa-chevron-left"></i></button>
+              <span id="pagerMateriasInfo" class="pager-info">1 / 1</span>
+              <button id="pagerMateriasNext" class="nav-btn" type="button" aria-label="Siguiente" title="Siguiente"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="estadisticas.js?v=20251101-7"></script>
+</body>
+</html>
