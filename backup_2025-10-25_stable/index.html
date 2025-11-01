@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gestión Académica Completa</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles_new.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-content">
+      <h1><i class="fas fa-graduation-cap"></i> Gestión Académica</h1>
+      <button id="refreshBtn" class="btn-icon" title="Refrescar"><i class="fas fa-sync-alt"></i></button>
+    </div>
+  </header>
+  <main class="container">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h3><i class="fas fa-plus-circle"></i> Crear Nuevo</h3>
+        <button id="newInstBtn" class="btn"><i class="fas fa-building"></i> Nueva Institución</button>
+        <button id="newAulaBtn" class="btn"><i class="fas fa-door-open"></i> Nueva Aula</button>
+        <button id="newProfesorBtn" class="btn"><i class="fas fa-chalkboard-teacher"></i> Nuevo Profesor</button>
+        <button id="newMateriaBtn" class="btn"><i class="fas fa-book"></i> Nueva Materia</button>
+        <button id="newAlumnoBtn" class="btn"><i class="fas fa-user-graduate"></i> Nuevo Alumno</button>
+        <button id="newPruebaBtn" class="btn"><i class="fas fa-file-alt"></i> Nueva Prueba</button>
+        <button id="newNotaBtn" class="btn primary"><i class="fas fa-star"></i> Cargar Nota</button>
+      </div>
+      <hr>
+      <div class="sidebar-section">
+        <h3><i class="fas fa-chart-line"></i> Estadísticas</h3>
+        <button id="viewStatsBtn" class="btn secondary"><i class="fas fa-chart-pie"></i> Ver Estadísticas</button>
+      </div>
+    </aside>
+
+    <section class="mainpanel">
+      <div id="list"></div>
+    </section>
+  </main>
+
+  <div id="modal" class="modal-overlay hidden">
+    <div class="modal-wrapper">
+      <div id="modalContent"></div>
+    </div>
+  </div>
+  <div id="toastContainer" class="toast-container"></div>
+  <script src="script.js"></script>
+</body>
+</html>

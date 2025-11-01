@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Test API</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        button { padding: 10px 20px; background: #0ea5e9; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0284c7; }
+        pre { background: #1e293b; color: #22c55e; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .error { color: #ef4444; }
+        .success { color: #22c55e; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test API - Base de Datos</h1>
+        <button onclick="testAPI()">🔍 Probar Conexión a API</button>
+        <button onclick="testDirectDB()" style="background: #8b5cf6; margin-left: 10px;">🗄️ Ver Estado BD</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function testAPI() {
+            const result = document.getElementById('result');
+            result.innerHTML = '<p>⏳ Cargando datos de la API...</p>';
+            
+            try {
+                const response = await fetch('api.php?action=get_all');
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Data received:', data);
+                
+                let html = '<h2 class="success">✅ API Funcionando Correctamente</h2>';
+                html += '<h3>📊 Resumen de Datos:</h3>';
+                html += `<ul>
+                    <li><strong>Instituciones:</strong> ${data.instituciones?.length || 0}</li>
+                    <li><strong>Profesores:</strong> ${data.profesores?.length || 0}</li>
+                    <li><strong>Aulas:</strong> ${data.aulas?.length || 0}</li>
+                    <li><strong>Materias:</strong> ${data.materias?.length || 0}</li>
+                    <li><strong>Alumnos:</strong> ${data.alumnos?.length || 0}</li>
+                    <li><strong>Pruebas:</strong> ${data.pruebas?.length || 0}</li>
+                    <li><strong>Notas:</strong> ${data.notas?.length || 0}</li>
+                    <li><strong>Aula-Materia:</strong> ${data.aula_materia?.length || 0}</li>
+                </ul>`;
+                
+                html += '<h3>📦 Datos Completos (JSON):</h3>';
+                html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+                result.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                result.innerHTML = `
+                    <h2 class="error">❌ Error al conectar con la API</h2>
+                    <p><strong>Mensaje de error:</strong> ${error.message}</p>
+                    <h3>💡 Posibles soluciones:</h3>
+                    <ul>
+                        <li>Verifica que XAMPP Apache esté corriendo</li>
+                        <li>Verifica que XAMPP MySQL esté corriendo</li>
+                        <li>Verifica que la base de datos 'db_alumnoss' exista</li>
+                        <li>Abre la consola del navegador (F12) para más detalles</li>
+                    </ul>
+                `;
+            }
+        }
+        
+        async function testDirectDB() {
+            const result = document.getElementById('result');
+            result.innerHTML = '<p>⏳ Verificando estado de la base de datos...</p>';
+            
+            let html = '<h2>🗄️ Checklist de Base de Datos</h2>';
+            html += '<ol>';
+            html += '<li><strong>Nombre de BD:</strong> db_alumnoss</li>';
+            html += '<li><strong>Usuario:</strong> root (sin contraseña)</li>';
+            html += '<li><strong>Tablas necesarias:</strong> instituciones, profesores, aulas, materias, aula_materia, alumnos, pruebas, notas</li>';
+            html += '</ol>';
+            
+            html += '<h3>🔧 Pasos para verificar:</h3>';
+            html += '<ol>';
+            html += '<li>Abre <a href="http://localhost/phpmyadmin" target="_blank">phpMyAdmin</a></li>';
+            html += '<li>Verifica que exista la base de datos "db_alumnoss"</li>';
+            html += '<li>Verifica que tenga las 8 tablas mencionadas arriba</li>';
+            html += '<li>Si no existe, créala e importa el SQL correspondiente</li>';
+            html += '</ol>';
+            
+            html += '<button onclick="testAPI()" style="margin-top: 20px;">🔄 Probar API nuevamente</button>';
+            
+            result.innerHTML = html;
+        }
+        
+        // Auto-ejecutar al cargar
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('🧪 Página de test cargada');
+        });
+    </script>
+</body>
+</html>
