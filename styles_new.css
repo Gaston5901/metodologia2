@@ -125,9 +125,13 @@ body {
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   padding: 1.5rem;
-  height: fit-content;
-  position: sticky;
+  position: fixed;
   top: 90px;
+  left: 0;
+  height: calc(100vh - 90px);
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  z-index: 200;
 }
 
 .sidebar-section {
@@ -262,6 +266,7 @@ body {
 .mainpanel {
   flex: 1;
   min-width: 0;
+  margin-left: 304px; /* 280 sidebar + 24 gap visual */
 }
 
 .section {
@@ -509,8 +514,8 @@ body {
 .modal-wrapper {
   width: 100%;
   max-width: 900px;
-  max-height: 85vh;
-  overflow: auto;
+  max-height: 92vh; /* más margen para contenido */
+  overflow: visible; /* evita scroll anidado, deja que el body del modal scrollee */
 }
 
 /* Modal fullscreen para lista de alumnos */
@@ -537,9 +542,104 @@ body {
   border-radius: 20px;
   box-shadow: var(--shadow-lg);
   width: 100%;
-  max-height: 85vh;
+  max-height: 90vh;
   overflow: hidden;
+  display: flex;
+  flex-direction: column; /* header fijo, body scroll */
   animation: modalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Variante angosta para formularios de creación */
+.modal-card.modal-narrow {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+/* Modal de estadísticas: más angosto y con paddings reducidos */
+.modal-card.modal-stats {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.modal-card.modal-stats .modal-header { padding: 1.25rem 1.5rem; }
+.modal-card.modal-stats .modal-body { padding: 1.25rem 1.5rem; }
+
+/* Filtros de estadísticas */
+.stats-filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.stats-filters .filter label {
+  display: block;
+  font-size: .85rem;
+  color: var(--text-muted);
+  margin-bottom: .35rem;
+}
+.stats-filters select {
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+.stats-filters .btn-clear {
+  align-self: end;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* Grid de tarjetas dentro de estadísticas: 3 columnas en desktop */
+.modal-stats .stats-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 968px) {
+  .modal-stats .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stats-filters { grid-template-columns: 1fr; }
+}
+
+.modal-card.modal-narrow .modal-header {
+  padding: 1.25rem 1.5rem;
+}
+
+.modal-card.modal-narrow .modal-body {
+  padding: 1.25rem 1.5rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto; /* asegura que se vea el botón de abajo */
+}
+
+/* Compactación de formularios SOLO en modales angostos */
+.modal-card.modal-narrow .form-group {
+  margin-bottom: 1rem;
+}
+
+.modal-card.modal-narrow .form-group label {
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.modal-card.modal-narrow .form-group input,
+.modal-card.modal-narrow .form-group select,
+.modal-card.modal-narrow .form-group textarea {
+  padding: 0.7rem 0.9rem;
+  font-size: 0.95rem;
+  border-radius: 10px;
+}
+
+.modal-card.modal-narrow .btn.primary {
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 640px) {
+  .modal-card.modal-narrow {
+    max-width: 92vw;
+  }
 }
 
 .modal-header {
@@ -569,7 +669,8 @@ body {
 
 .modal-body {
   padding: 2.5rem 3rem;
-  max-height: calc(85vh - 90px);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   background: #fafbfc;
 }

@@ -4,9 +4,13 @@ $mysqli = new mysqli("localhost","root","","db_alumnoss");
 if($mysqli->connect_errno){ echo json_encode(["error"=>"DB_CONN_FAILED"]); exit; }
 @$mysqli->set_charset("utf8mb4");
 function all($res){ $out=[]; while($r=$res->fetch_assoc()) $out[]=$r; return $out; }
-$action = $_GET['action'] ?? 'get_all';
+$action = $_POST['action'] ?? $_GET['action'] ?? 'get_all';
 $input = json_decode(file_get_contents("php://input"), true) ?? [];
 function esc($v){ global $mysqli; return $mysqli->real_escape_string($v); }
+// DEBUG: Mostrar contenido de $_POST para depuración
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    error_log('POST DATA: ' . print_r($_POST, true));
+}
 
 if($action=='get_all'){
   $instituciones = all($mysqli->query("SELECT * FROM instituciones"));
@@ -239,11 +243,44 @@ if($action=='update_alumno' && isset($_GET['id'])){
   echo json_encode(["ok"=> $ok?1:0]); exit;
 }
 
-if($action=='update_prueba' && isset($_GET['id'])){
-  $id = intval($_GET['id']);
-  $nom=esc($input['nombre']??''); $fecha=esc($input['fecha']??''); $peso=floatval($input['peso']??0);
-  $ok = $mysqli->query("UPDATE pruebas SET nombre='{$nom}', fecha='{$fecha}', peso={$peso} WHERE id={$id}");
-  echo json_encode(["ok"=> $ok?1:0]); exit;
+if($action=='update_prueba' && isset($_POST['id'])){
+  $id = intval($_POST['id']);
+  $nombre = esc($_POST['nombre']??'');
+  $aula_materia_id = intval($_POST['aula_materia_id']??0);
+  $fecha = esc($_POST['fecha']??'');
+  $peso = floatval($_POST['peso']??1.0);
+  
+ // Debug
+ error_log("UPDATE PRUEBA - ID: $id, Nombre: $nombre, AulaMateria: $aula_materia_id, Fecha: $fecha, Peso: $peso");
+ 
+ $query = "UPDATE pruebas SET nombre='{$nombre}', aula_materia_id={$aula_materia_id}, fecha='{$fecha}', peso={$peso} WHERE id={$id}";
+ error_log("Query: $query");
+ 
+ $ok = $mysqli->query($query);
+ 
+ if(!$ok) {
+   error_log("MySQL Error: " . $mysqli->error);
+   echo json_encode(["success"=> false, "message"=> "Error SQL: " . $mysqli->error]); 
+ } else {
+   echo json_encode(["success"=> true, "message"=> "Prueba actualizada correctamente"]); 
+ }
+  exit;
+}
+
+if($action=='delete_prueba' && isset($_POST['id'])){
+  $id = intval($_POST['id']);
+ 
+ error_log("DELETE PRUEBA - ID: $id");
+ 
+ $ok = $mysqli->query("DELETE FROM pruebas WHERE id={$id}");
+ 
+ if(!$ok) {
+   error_log("MySQL Error: " . $mysqli->error);
+   echo json_encode(["success"=> false, "message"=> "Error SQL: " . $mysqli->error]); 
+ } else {
+   echo json_encode(["success"=> true, "message"=> "Prueba eliminada correctamente"]); 
+ }
+  exit;
 }
 
 echo json_encode(["error"=>"unknown_action"]);

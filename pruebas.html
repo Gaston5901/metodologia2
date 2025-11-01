@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Pruebas</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 10px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .header {
+      background: white;
+      padding: 8px 15px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .header h1 {
+      color: #667eea;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .search-box {
+      padding: 7px 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 12px;
+      width: 200px;
+      transition: all 0.3s;
+    }
+
+    .search-box:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .filter-select {
+      padding: 7px 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 12px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.3s;
+      max-width: 200px;
+    }
+
+    .filter-select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .btn {
+      padding: 7px 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-back {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-back:hover {
+      background: #5a6268;
+      transform: translateY(-2px);
+    }
+
+    .table-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .table-wrapper {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    th {
+      padding: 10px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 12px;
+      color: #333;
+    }
+
+    tbody tr {
+      transition: all 0.2s;
+    }
+
+    tbody tr:hover {
+      background: #f8f9ff;
+      transform: scale(1.01);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-action {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-edit {
+      background: #ffc107;
+      color: #333;
+    }
+
+    .btn-edit:hover {
+      background: #ffb300;
+      transform: translateY(-2px);
+    }
+
+    .btn-delete {
+      background: #dc3545;
+      color: white;
+    }
+
+    .btn-delete:hover {
+      background: #c82333;
+      transform: translateY(-2px);
+    }
+
+    .pagination {
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 2px solid #f0f0f0;
+      flex-shrink: 0;
+    }
+
+    .pagination-info {
+      font-size: 11px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .pagination-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-page {
+      padding: 6px 12px;
+      border: 2px solid #667eea;
+      background: white;
+      color: #667eea;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    .btn-page:hover:not(:disabled) {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    .btn-page:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 15px;
+      color: #ddd;
+    }
+
+    /* Modal para editar */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .modal-header h2 {
+      color: #667eea;
+      font-size: 20px;
+    }
+
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+      transition: color 0.3s;
+    }
+
+    .btn-close:hover {
+      color: #333;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      font-size: 13px;
+      color: #333;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 13px;
+      transition: all 0.3s;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 2px solid #f0f0f0;
+    }
+
+    .btn-cancel {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-cancel:hover {
+      background: #5a6268;
+    }
+
+    .btn-save {
+      background: #28a745;
+      color: white;
+    }
+
+    .btn-save:hover {
+      background: #218838;
+    }
+
+    /* Animaciones para notificaciones */
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOutRight {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
+
+    .swal2-show {
+      animation: slideInRight 0.3s ease-out;
+    }
+
+    .swal2-hide {
+      animation: slideOutRight 0.3s ease-in;
+    }
+
+    /* Estilos personalizados para SweetAlert2 */
+    .animated-popup {
+      border-radius: 15px !important;
+    }
+
+    .btn-delete-confirm {
+      background-color: #dc3545 !important;
+      border-radius: 8px !important;
+      padding: 10px 24px !important;
+      font-weight: 500 !important;
+    }
+
+    .btn-delete-confirm:hover {
+      background-color: #c82333 !important;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4) !important;
+    }
+
+    .btn-cancel-confirm {
+      background-color: #6c757d !important;
+      border-radius: 8px !important;
+      padding: 10px 24px !important;
+      font-weight: 500 !important;
+    }
+
+    .btn-cancel-confirm:hover {
+      background-color: #5a6268 !important;
+      transform: translateY(-2px);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge-success {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .badge-warning {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .badge-danger {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .badge-info {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>
+        <i class="fas fa-file-alt"></i>
+        Gestión de Pruebas
+      </h1>
+      <div class="header-right">
+        <input 
+          type="text" 
+          id="searchBox" 
+          class="search-box" 
+          placeholder="🔍 Buscar prueba..."
+        >
+        <select id="institucionFilter" class="filter-select">
+          <option value="">Todas las instituciones</option>
+        </select>
+        <select id="aulaFilter" class="filter-select">
+          <option value="">Todas las aulas</option>
+        </select>
+        <button class="btn btn-primary" onclick="location.reload()">
+          <i class="fas fa-sync-alt"></i> Actualizar
+        </button>
+        <button class="btn btn-back" onclick="window.location.href='index.html'">
+          <i class="fas fa-arrow-left"></i> Volver
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabla de pruebas -->
+    <div class="table-container">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Aula</th>
+              <th>Materia</th>
+              <th>Institución</th>
+              <th>Fecha</th>
+              <th>Peso</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="pruebasTableBody">
+            <tr>
+              <td colspan="8" class="empty-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Cargando pruebas...</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <div class="pagination">
+        <div class="pagination-info">
+          Página <span id="currentPage">1</span> - Mostrando <span id="showingCount">0</span> de <span id="totalCount">0</span> pruebas
+        </div>
+        <div class="pagination-buttons">
+          <button class="btn-page" id="prevBtn" onclick="prevPage()">
+            <i class="fas fa-chevron-left"></i> Anterior
+          </button>
+          <button class="btn-page" id="nextBtn" onclick="nextPage()">
+            Siguiente <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para editar prueba -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><i class="fas fa-edit"></i> Editar Prueba</h2>
+        <button class="btn-close" onclick="closeModal()">&times;</button>
+      </div>
+      <form id="editForm">
+        <input type="hidden" id="editPruebaId">
+        
+        <div class="form-group">
+          <label for="editNombre">Nombre de la Prueba *</label>
+          <input type="text" id="editNombre" required>
+        </div>
+
+        <div class="form-group">
+          <label for="editAulaMateria">Aula y Materia *</label>
+          <select id="editAulaMateria" required>
+            <option value="">Seleccionar aula y materia...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="editFecha">Fecha *</label>
+          <input type="date" id="editFecha" required>
+        </div>
+
+        <div class="form-group">
+          <label for="editPeso">Peso (ponderación) *</label>
+          <input type="number" id="editPeso" step="0.1" min="0" max="10" value="1.0" required>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-cancel" onclick="closeModal()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-save">
+            <i class="fas fa-save"></i> Guardar Cambios
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="pruebas.js"></script>
+</body>
+</html>

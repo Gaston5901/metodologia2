@@ -157,15 +157,7 @@ function renderMain() {
       </div>
     </div>
     
-    <div class="section collapsible collapsed" id="sec-pruebas">
-      <div class="section-header" data-target="pruebas-list">
-        <h2><i class="fas fa-file-alt"></i> Pruebas</h2>
-        <i class="fas fa-chevron-down chevron"></i>
-      </div>
-      <div class="section-body">
-        <div id="pruebas-list" class="cards-grid"></div>
-      </div>
-    </div>
+
   `;
   // toggles acordeón
   document.querySelectorAll('.section.collapsible .section-header').forEach(h => {
@@ -180,7 +172,7 @@ function renderMain() {
   renderProfesores();
   renderMaterias();
   // Alumnos se muestra en modal, no en acordeón
-  renderPruebas();
+  // renderPruebas();
 }
 
 // Modal especial para lista de alumnos
@@ -808,6 +800,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
+  // Botón Ver Pruebas - Redirige a página dedicada
+  const viewPruebasBtn = document.getElementById('viewPruebasBtn');
+  if (viewPruebasBtn) {
+    viewPruebasBtn.addEventListener('click', () => {
+      window.location.href = 'pruebas.html';
+    });
+  }
+  
   const search = document.getElementById('searchInput');
   if (search) {
     search.addEventListener('input', (e) => {
@@ -843,7 +843,7 @@ function setupButtons() {
 function setupNewInstitucion() {
   document.getElementById('newInstBtn').addEventListener('click', () => {
     openModal(`
-      <div class="modal-card">
+      <div class="modal-card modal-narrow">
         <div class="modal-header">
           <h2><i class="fas fa-building"></i> Nueva Institución</h2>
           <button onclick="closeModal()" class="btn-close"><i class="fas fa-times"></i></button>
@@ -916,7 +916,7 @@ function setupNewProfesor() {
     const optsInst = allData.instituciones.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
     
     openModal(`
-      <div class="modal-card">
+      <div class="modal-card modal-narrow">
         <div class="modal-header">
           <h2><i class="fas fa-chalkboard-teacher"></i> Nuevo Profesor</h2>
           <button onclick="closeModal()" class="btn-close"><i class="fas fa-times"></i></button>
@@ -981,7 +981,7 @@ function setupNewProfesor() {
 function setupNewMateria() {
   document.getElementById('newMateriaBtn').addEventListener('click', () => {
     openModal(`
-      <div class="modal-card">
+      <div class="modal-card modal-narrow">
         <div class="modal-header">
           <h2><i class="fas fa-book"></i> Nueva Materia</h2>
           <button onclick="closeModal()" class="btn-close"><i class="fas fa-times"></i></button>
@@ -1043,7 +1043,7 @@ function setupNewAula() {
     const optsProf = allData.profesores.map(p => `<option value="${p.id}">${p.nombre} ${p.apellido}</option>`).join('');
     
     openModal(`
-      <div class="modal-card">
+      <div class="modal-card modal-narrow">
         <div class="modal-header">
           <h2><i class="fas fa-door-open"></i> Nueva Aula</h2>
           <button onclick="closeModal()" class="btn-close"><i class="fas fa-times"></i></button>
@@ -1109,7 +1109,7 @@ function setupNewAlumno() {
     const optsInst = allData.instituciones.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
     
     openModal(`
-      <div class="modal-card">
+      <div class="modal-card modal-narrow">
         <div class="modal-header">
           <h2><i class="fas fa-user-graduate"></i> Nuevo Alumno</h2>
           <button onclick="closeModal()" class="btn-close"><i class="fas fa-times"></i></button>
@@ -1208,7 +1208,7 @@ function setupNewPrueba() {
     const optsInst = allData.instituciones.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
     
     openModal(`
-      <div class="modal-card">
+      <div class="modal-card modal-narrow">
         <div class="modal-header">
           <h2><i class="fas fa-file-alt"></i> Nueva Prueba</h2>
           <button onclick="closeModal()" class="btn-close"><i class="fas fa-times"></i></button>
@@ -1337,7 +1337,7 @@ function setupNewNota() {
     const optsAlumnos = allData.alumnos.map(a => `<option value="${a.id}">${a.nombre} ${a.apellido}</option>`).join('');
     
     openModal(`
-      <div class="modal-card">
+      <div class="modal-card modal-narrow">
         <div class="modal-header">
           <h2><i class="fas fa-star"></i> Cargar Nota</h2>
           <button onclick="closeModal()" class="btn-close"><i class="fas fa-times"></i></button>
@@ -1397,97 +1397,158 @@ function setupNewNota() {
 function setupEstadisticas() {
   document.getElementById('viewStatsBtn').addEventListener('click', async () => {
     openModal(`
-      <div class="modal-card">
+      <div class="modal-card modal-stats">
         <div class="modal-header">
           <h2><i class="fas fa-chart-pie"></i> Estadísticas</h2>
           <button onclick="closeModal()" class="btn-close"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
-          <div class="stats-grid">
-            <div class="stat-card">
-              <i class="fas fa-building"></i>
-              <h3>${allData.instituciones.length}</h3>
-              <p>Instituciones</p>
+          <div class="stats-filters">
+            <div class="filter">
+              <label>Institución</label>
+              <select id="statsInstSelect">
+                <option value="">Todas</option>
+                ${allData.instituciones.map(i=>`<option value="${i.id}">${i.nombre}</option>`).join('')}
+              </select>
             </div>
-            <div class="stat-card">
-              <i class="fas fa-door-open"></i>
-              <h3>${allData.aulas.length}</h3>
-              <p>Aulas</p>
+            <div class="filter">
+              <label>Aula</label>
+              <select id="statsAulaSelect" disabled>
+                <option value="">Todas</option>
+              </select>
             </div>
-            <div class="stat-card">
-              <i class="fas fa-chalkboard-teacher"></i>
-              <h3>${allData.profesores.length}</h3>
-              <p>Profesores</p>
-            </div>
-            <div class="stat-card">
-              <i class="fas fa-book"></i>
-              <h3>${allData.materias.length}</h3>
-              <p>Materias</p>
-            </div>
-            <div class="stat-card">
-              <i class="fas fa-user-graduate"></i>
-              <h3>${allData.alumnos.length}</h3>
-              <p>Alumnos</p>
-            </div>
-            <div class="stat-card">
-              <i class="fas fa-file-alt"></i>
-              <h3>${allData.pruebas.length}</h3>
-              <p>Pruebas</p>
-            </div>
+            <button id="statsClearBtn" class="btn-clear">Limpiar</button>
           </div>
-          <div style="margin-top: 20px;">
-            <canvas id="statsChart" width="400" height="200"></canvas>
+
+          <div class="stats-grid" id="statsCards"></div>
+          <div style="margin-top: 16px; height: 260px;">
+            <canvas id="statsChart"></canvas>
           </div>
-          <div id="advStats" style="margin-top:20px;"></div>
+          <div id="advStats" style="margin-top:16px;"></div>
         </div>
       </div>
     `);
-    
-    if (currentChart) currentChart.destroy();
-    
-    const ctx = document.getElementById('statsChart').getContext('2d');
-    currentChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ['Instituciones', 'Aulas', 'Profesores', 'Materias', 'Alumnos', 'Pruebas'],
-        datasets: [{
-          label: 'Cantidad',
-          data: [
-            allData.instituciones.length,
-            allData.aulas.length,
-            allData.profesores.length,
-            allData.materias.length,
-            allData.alumnos.length,
-            allData.pruebas.length
-          ],
-          backgroundColor: ['#3498db', '#9b59b6', '#e74c3c', '#2ecc71', '#f39c12', '#1abc9c']
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true } }
-      }
-    });
-    // Estadísticas avanzadas desde API
-    try {
-      const resp = await fetch('api.php?action=get_estadisticas');
-      const adv = await resp.json();
-      const div = document.getElementById('advStats');
-      const generos = (adv.generos||[]).map(g=>`${g.genero||'N/D'}: ${g.cantidad}`).join(' · ');
-      const pm = (adv.promedios_por_materia||[]).map(x=>`${x.materia}: ${x.promedio}`).join(' · ');
-      div.innerHTML = `
-        <hr style="margin:20px 0; border:none; height:2px; background: var(--bg);">
-        <h3 style="margin-bottom:10px; color:#334155;"><i class="fas fa-signal"></i> Resumen avanzado</h3>
-        <p><strong>Promedio de edades:</strong> ${adv.prom_edad ?? 'N/D'}</p>
-        <p><strong>Promedio de notas:</strong> ${adv.prom_notas ?? 'N/D'} · <strong>Máx:</strong> ${adv.nota_alta ?? 'N/D'} · <strong>Mín:</strong> ${adv.nota_baja ?? 'N/D'}</p>
-        <p><strong>Distribución por género:</strong> ${generos || 'N/D'}</p>
-        <p><strong>Promedio por materia:</strong> ${pm || 'N/D'}</p>
-      `;
-    } catch (err) {
-      console.error('Adv stats error', err);
+
+    let filter = { instId: '', aulaId: '' };
+
+    function computeScope() {
+      const instId = filter.instId;
+      const aulaId = filter.aulaId;
+      const instituciones = instId ? allData.instituciones.filter(x=> String(x.id)===String(instId)) : allData.instituciones;
+      const aulas = allData.aulas.filter(a=> {
+        if (aulaId) return String(a.id)===String(aulaId);
+        if (instId) return String(a.institucion_id)===String(instId);
+        return true;
+      });
+      const profIds = new Set(aulas.map(a=> a.profesor_id).filter(Boolean));
+      const aulaIds = new Set(aulas.map(a=> String(a.id)));
+      const aulaMateria = allData.aula_materia.filter(am=> aulaIds.has(String(am.aula_id)));
+      const materiaIds = new Set(aulaMateria.map(am=> String(am.materia_id)));
+      const materias = allData.materias.filter(m=> materiaIds.has(String(m.id)));
+      const alumnos = allData.alumnos.filter(al=> {
+        if (aulaId) return String(al.aula_id)===String(aulaId);
+        if (instId) return String(al.institucion_id)===String(instId);
+        return true;
+      });
+      const amIds = new Set(aulaMateria.map(am=> String(am.id)));
+      const pruebas = allData.pruebas.filter(p=> amIds.has(String(p.aula_materia_id)));
+      const profesores = allData.profesores.filter(p=> profIds.has(p.id));
+      const notas = allData.notas.filter(n=> {
+        // nota pertenece si su prueba está en el scope o su alumno está en el scope
+        return amIds.has(String(allData.pruebas.find(p=> String(p.id)===String(n.prueba_id))?.aula_materia_id)) ||
+               alumnos.some(al=> String(al.id)===String(n.alumno_id));
+      });
+      return { instituciones, aulas, profesores, materias, alumnos, pruebas, notas };
     }
+
+    function renderCards(scope){
+      const el = document.getElementById('statsCards');
+      el.innerHTML = `
+        <div class="stat-card" id="card-instituciones"><i class="fas fa-building"></i><h3>${scope.instituciones.length}</h3><p>Instituciones</p></div>
+        <div class="stat-card"><i class="fas fa-door-open"></i><h3>${scope.aulas.length}</h3><p>Aulas</p></div>
+        <div class="stat-card"><i class="fas fa-chalkboard-teacher"></i><h3>${scope.profesores.length}</h3><p>Profesores</p></div>
+        <div class="stat-card"><i class="fas fa-book"></i><h3>${scope.materias.length}</h3><p>Materias</p></div>
+        <div class="stat-card"><i class="fas fa-user-graduate"></i><h3>${scope.alumnos.length}</h3><p>Alumnos</p></div>
+        <div class="stat-card"><i class="fas fa-file-alt"></i><h3>${scope.pruebas.length}</h3><p>Pruebas</p></div>
+      `;
+      // Al tocar la tarjeta de Instituciones, enfocar selector
+      const instCard = document.getElementById('card-instituciones');
+      if (instCard) instCard.addEventListener('click', ()=>{
+        const sel = document.getElementById('statsInstSelect');
+        sel?.focus();
+        sel?.scrollIntoView({behavior:'smooth', block:'center'});
+      });
+    }
+
+    function renderChart(scope){
+      if (currentChart) currentChart.destroy();
+      const ctx = document.getElementById('statsChart').getContext('2d');
+      currentChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Instituciones','Aulas','Profesores','Materias','Alumnos','Pruebas'],
+          datasets: [{
+            label: 'Cantidad',
+            data: [scope.instituciones.length, scope.aulas.length, scope.profesores.length, scope.materias.length, scope.alumnos.length, scope.pruebas.length],
+            backgroundColor: ['#3498db','#9b59b6','#e74c3c','#2ecc71','#f39c12','#1abc9c']
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
+
+    function renderAdvanced(scope){
+      const div = document.getElementById('advStats');
+      const generosMap = scope.alumnos.reduce((acc, al)=>{ const g=(al.genero||'N/D'); acc[g]=(acc[g]||0)+1; return acc; },{});
+      const generos = Object.entries(generosMap).map(([k,v])=>`${k}: ${v}`).join(' · ');
+      const notas = scope.notas.map(n=> parseFloat(n.nota)).filter(x=> !isNaN(x));
+      const prom = notas.length? (notas.reduce((a,b)=>a+b,0)/notas.length).toFixed(2) : 'N/D';
+      const max = notas.length? Math.max(...notas) : 'N/D';
+      const min = notas.length? Math.min(...notas) : 'N/D';
+      div.innerHTML = `
+        <hr style="margin:16px 0; border:none; height:2px; background: var(--bg);">
+        <h3 style="margin-bottom:8px; color:#334155;"><i class="fas fa-signal"></i> Resumen</h3>
+        <p><strong>Promedio de notas:</strong> ${prom} · <strong>Máx:</strong> ${max} · <strong>Mín:</strong> ${min}</p>
+        <p><strong>Distribución por género:</strong> ${generos || 'N/D'}</p>
+      `;
+    }
+
+    function updateAulasSelect(){
+      const selA = document.getElementById('statsAulaSelect');
+      const selI = document.getElementById('statsInstSelect');
+      const instId = selI.value;
+      if (!instId) { selA.innerHTML = '<option value="">Todas</option>'; selA.disabled = true; return; }
+      const aulasInst = allData.aulas.filter(a=> String(a.institucion_id)===String(instId));
+      selA.innerHTML = '<option value="">Todas</option>' + aulasInst.map(a=>`<option value="${a.id}">${a.nombre}</option>`).join('');
+      selA.disabled = false;
+    }
+
+    function renderAll(){
+      const scope = computeScope();
+      renderCards(scope); renderChart(scope); renderAdvanced(scope);
+    }
+
+    // Inicializar
+    updateAulasSelect();
+    renderAll();
+
+    // Eventos filtros
+    document.getElementById('statsInstSelect').addEventListener('change', (e)=>{
+      filter.instId = e.target.value;
+      filter.aulaId = '';
+      updateAulasSelect();
+      renderAll();
+    });
+    document.getElementById('statsAulaSelect').addEventListener('change', (e)=>{
+      filter.aulaId = e.target.value;
+      renderAll();
+    });
+    document.getElementById('statsClearBtn').addEventListener('click', ()=>{
+      filter = { instId:'', aulaId:'' };
+      document.getElementById('statsInstSelect').value = '';
+      updateAulasSelect();
+      renderAll();
+    });
   });
 }
 

@@ -247,6 +247,15 @@
       box-shadow: 0 4px 12px rgba(52,152,219,0.5);
     }
     
+    .btn-view {
+      background: #9b59b6;
+      box-shadow: 0 2px 8px rgba(155,89,182,0.3);
+    }
+    
+    .btn-view:hover {
+      box-shadow: 0 4px 12px rgba(155,89,182,0.5);
+    }
+    
     .btn-delete {
       background: #e74c3c;
       box-shadow: 0 2px 8px rgba(231,76,60,0.3);
@@ -497,6 +506,113 @@
       box-shadow: 0 4px 12px rgba(149,165,166,0.4) !important;
     }
     
+    /* Modal de Notas */
+    .modal-lg {
+      max-width: 900px;
+    }
+    
+    .notas-alumno-info {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    
+    .notas-alumno-info h3 {
+      margin: 0 0 10px 0;
+      font-size: 20px;
+    }
+    
+    .notas-alumno-info p {
+      margin: 5px 0;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    .materia-section {
+      margin-bottom: 30px;
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 10px;
+      border-left: 4px solid #667eea;
+    }
+    
+    .materia-section h4 {
+      margin: 0 0 15px 0;
+      color: #667eea;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .notas-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .notas-table th {
+      background: #667eea;
+      color: white;
+      padding: 12px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    
+    .notas-table td {
+      padding: 12px;
+      border-bottom: 1px solid #ecf0f1;
+      font-size: 13px;
+    }
+    
+    .notas-table tr:hover {
+      background: #f8f9fa;
+    }
+    
+    .nota-valor {
+      font-weight: 600;
+      font-size: 16px;
+    }
+    
+    .nota-aprobado {
+      color: #27ae60;
+    }
+    
+    .nota-desaprobado {
+      color: #e74c3c;
+    }
+    
+    .promedio-box {
+      background: #ecf0f1;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      text-align: center;
+    }
+    
+    .promedio-box strong {
+      font-size: 18px;
+      color: #2c3e50;
+    }
+    
+    .promedio-valor {
+      font-size: 24px;
+      font-weight: 700;
+      margin-left: 10px;
+    }
+    
+    .no-notas {
+      text-align: center;
+      padding: 20px;
+      color: #95a5a6;
+      font-style: italic;
+    }
+    
     /* Animaciones para Toast notifications */
     @keyframes slideInRight {
       from {
@@ -658,7 +774,25 @@
       </div>
     </div>
   </div>
-  
+
+  <!-- Modal de Notas -->
+  <div id="notasModal" class="modal">
+    <div class="modal-content" style="max-width: 900px;">
+      <div class="modal-header">
+        <h2><i class="fas fa-star"></i> Notas del Alumno</h2>
+        <button class="btn-close" onclick="closeNotasModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="notasContent">
+          <div style="text-align: center; padding: 40px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 48px; color: #667eea;"></i>
+            <p style="margin-top: 20px; color: #666;">Cargando notas...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="alumnos.js"></script>
 </body>
 </html>
