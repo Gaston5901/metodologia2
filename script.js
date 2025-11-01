@@ -6,6 +6,9 @@ let currentChart = null;
 // Handler global para cerrar modal con ESC
 let _escHandler = null;
 let searchQuery = '';
+// Paginación de alumnos
+let alumnosPage = 1;
+const alumnosPerPage = 15;
 
 // ========================================
 // SISTEMA DE NOTIFICACIONES TOAST
@@ -49,6 +52,14 @@ function openModal(content) {
   modalContent.innerHTML = content;
   modal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+  
+  // Si estamos en la vista fullscreen de alumnos, aumentar z-index del modal
+  const isFullViewActive = document.getElementById('alumnosFullView');
+  if (isFullViewActive) {
+    modal.style.zIndex = '99999'; // Mayor que el fullview (9999)
+  } else {
+    modal.style.zIndex = ''; // Reset al valor por defecto del CSS
+  }
   
   // Enfocar el primer campo interactivo del modal
   setTimeout(() => {
@@ -146,16 +157,6 @@ function renderMain() {
       </div>
     </div>
     
-    <div class="section collapsible collapsed" id="sec-alumnos">
-      <div class="section-header" data-target="alumnos-list">
-        <h2><i class="fas fa-user-graduate"></i> Alumnos</h2>
-        <i class="fas fa-chevron-down chevron"></i>
-      </div>
-      <div class="section-body">
-        <div id="alumnos-list" class="cards-grid"></div>
-      </div>
-    </div>
-    
     <div class="section collapsible collapsed" id="sec-pruebas">
       <div class="section-header" data-target="pruebas-list">
         <h2><i class="fas fa-file-alt"></i> Pruebas</h2>
@@ -178,8 +179,373 @@ function renderMain() {
   renderAulas();
   renderProfesores();
   renderMaterias();
-  renderAlumnos();
+  // Alumnos se muestra en modal, no en acordeón
   renderPruebas();
+}
+
+// Modal especial para lista de alumnos
+async function openAlumnosModal() {
+  // Guardar en sessionStorage que estamos en la vista de alumnos
+  sessionStorage.setItem('alumnosFullViewActive', 'true');
+  sessionStorage.setItem('alumnosPage', alumnosPage.toString());
+  
+  // Ocultar el contenido principal y mostrar vista de alumnos
+  document.querySelector('.mainpanel').style.display = 'none';
+  document.querySelector('.sidebar').style.display = 'none';
+  document.querySelector('.topbar').style.display = 'none';
+  
+  // Crear vista fullscreen de alumnos
+  const body = document.querySelector('body');
+  const alumnosView = document.createElement('div');
+  alumnosView.id = 'alumnosFullView';
+  alumnosView.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #f0f4f8; z-index: 9999; overflow: hidden;';
+  body.appendChild(alumnosView);
+  
+  // Asegurar datos cargados
+  if (!allData || !allData.alumnos) {
+    alumnosView.innerHTML = '<div style="padding: 40px; text-align: center;"><h2>Cargando...</h2></div>';
+    try {
+      await loadAll();
+    } catch (_) {}
+  }
+  
+  // Restaurar página guardada si existe
+  const savedPage = sessionStorage.getItem('alumnosPage');
+  if (savedPage) {
+    alumnosPage = parseInt(savedPage);
+  } else {
+    alumnosPage = 1;
+  }
+  
+  renderAlumnosFullView();
+}
+
+function renderAlumnosFullView() {
+  const alumnosView = document.getElementById('alumnosFullView');
+  if (!alumnosView) return;
+  
+  if (!allData.alumnos || allData.alumnos.length === 0) {
+    alumnosView.innerHTML = `
+      <div style="padding: 40px; text-align: center;">
+        <h2>No hay alumnos</h2>
+        <button onclick="closeAlumnosFullView()" style="margin-top: 20px; padding: 12px 24px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
+          <i class="fas fa-arrow-left"></i> Volver
+        </button>
+      </div>
+    `;
+    return;
+  }
+  
+  const term = (searchQuery || '').toLowerCase();
+  const items = allData.alumnos.filter(al => {
+    if (!term) return true;
+    return (al.nombre||'').toLowerCase().includes(term) || (al.apellido||'').toLowerCase().includes(term) || (al.dni||'').toLowerCase().includes(term);
+  });
+  
+  const totalPages = Math.ceil(items.length / alumnosPerPage);
+  const start = (alumnosPage - 1) * alumnosPerPage;
+  const end = start + alumnosPerPage;
+  const pageItems = items.slice(start, end);
+  
+  let html = `
+    <div style="height: 100vh; display: flex; flex-direction: column; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+      <!-- Header -->
+      <div style="background: rgba(255,255,255,0.98); padding: 12px 30px; box-shadow: 0 2px 15px rgba(0,0,0,0.15); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <button onclick="closeAlumnosFullView()" style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; font-weight: 600; transition: all 0.2s; box-shadow: 0 2px 8px rgba(231,76,60,0.3);">
+            <i class="fas fa-arrow-left"></i> Volver
+          </button>
+          <h1 style="margin: 0; font-size: 22px; color: #2c3e50; font-weight: 700;">
+            <i class="fas fa-user-graduate"></i> Lista de Alumnos
+          </h1>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <input type="text" id="searchAlumnosFullView" placeholder="🔍 Buscar alumno..." 
+                 style="width: 280px; padding: 10px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; transition: all 0.2s;"
+                 value="${searchQuery || ''}"
+                 onfocus="this.style.borderColor='#667eea'; this.style.boxShadow='0 0 0 3px rgba(102,126,234,0.1)'"
+                 onblur="this.style.borderColor='#ddd'; this.style.boxShadow='none'">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <button onclick="prevPageAlumnosModal()" ${alumnosPage <= 1 ? 'disabled' : ''} 
+                    style="background: #3498db; color: white; border: none; padding: 10px 22px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; font-weight: 600; transition: all 0.2s; ${alumnosPage <= 1 ? 'opacity: 0.3; cursor: not-allowed;' : 'box-shadow: 0 2px 8px rgba(52,152,219,0.35);'}"
+                    ${alumnosPage <= 1 ? '' : 'onmouseover="this.style.transform=\'translateY(-2px)\'; this.style.boxShadow=\'0 4px 12px rgba(52,152,219,0.4)\'" onmouseout="this.style.transform=\'translateY(0)\'; this.style.boxShadow=\'0 2px 8px rgba(52,152,219,0.35)\'"'}>
+              <i class="fas fa-chevron-left"></i> Anterior
+            </button>
+            <span style="font-size: 13px; font-weight: 700; color: #2c3e50; min-width: 160px; text-align: center; background: linear-gradient(135deg, #ecf0f1 0%, #d5dbdb 100%); padding: 10px 18px; border-radius: 8px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
+              Página ${alumnosPage}/${totalPages}
+            </span>
+            <button onclick="nextPageAlumnosModal()" ${alumnosPage >= totalPages ? 'disabled' : ''} 
+                    style="background: #3498db; color: white; border: none; padding: 10px 22px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; font-weight: 600; transition: all 0.2s; ${alumnosPage >= totalPages ? 'opacity: 0.3; cursor: not-allowed;' : 'box-shadow: 0 2px 8px rgba(52,152,219,0.35);'}"
+                    ${alumnosPage >= totalPages ? '' : 'onmouseover="this.style.transform=\'translateY(-2px)\'; this.style.boxShadow=\'0 4px 12px rgba(52,152,219,0.4)\'" onmouseout="this.style.transform=\'translateY(0)\'; this.style.boxShadow=\'0 2px 8px rgba(52,152,219,0.35)\'"'}>
+              Siguiente <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Contenido - Tabla con altura calculada para 15 filas -->
+      <div style="flex: 1; padding: 15px 30px; overflow: hidden; display: flex; flex-direction: column; justify-content: center;">
+        <div style="background: white; border-radius: 12px; box-shadow: 0 10px 50px rgba(0,0,0,0.25); overflow: hidden; max-width: 100%; margin: 0 auto; width: 100%;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <th style="padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Nombre</th>
+                <th style="padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Apellido</th>
+                <th style="padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">DNI</th>
+                <th style="padding: 14px 16px; text-align: center; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Edad</th>
+                <th style="padding: 14px 16px; text-align: center; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Género</th>
+                <th style="padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Aula</th>
+                <th style="padding: 14px 16px; text-align: center; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; width: 140px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+  `;
+  
+  pageItems.forEach((al, idx) => {
+    const aula = allData.aulas.find(a => a.id == al.aula_id);
+    const aulaName = aula ? aula.nombre : 'Sin aula';
+    const rowColor = idx % 2 === 0 ? '#f8f9fa' : 'white';
+    html += `
+      <tr style="background: ${rowColor}; border-bottom: 1px solid #e9ecef; transition: all 0.2s;" onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='${rowColor}'">
+        <td style="padding: 10px 12px; font-size: 14px; color: #2c3e50;">${al.nombre}</td>
+        <td style="padding: 10px 12px; font-size: 14px; color: #2c3e50;">${al.apellido}</td>
+        <td style="padding: 10px 12px; font-size: 14px; color: #7f8c8d;">${al.dni}</td>
+        <td style="padding: 10px 12px; text-align: center; font-size: 14px; color: #2c3e50;">${al.edad}</td>
+        <td style="padding: 10px 12px; text-align: center; font-size: 14px;">
+          <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 12px; background: ${al.genero === 'Masculino' ? '#e3f2fd' : '#fce4ec'}; color: ${al.genero === 'Masculino' ? '#1976d2' : '#c2185b'}; font-weight: 600; font-size: 12px;">
+            <i class="fas fa-${al.genero === 'Masculino' ? 'mars' : al.genero === 'Femenino' ? 'venus' : 'venus-mars'}"></i>
+            ${al.genero}
+          </span>
+        </td>
+        <td style="padding: 10px 12px; font-size: 14px; color: #2c3e50;">${aulaName}</td>
+        <td style="padding: 10px 12px; text-align: center;">
+          <button class="btn-mini edit" onclick="openEditAlumnoFromFullView(${al.id})" title="Editar" style="background: #3498db; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-right: 5px;">
+            <i class="fas fa-pen"></i>
+          </button>
+          <button class="btn-mini del" onclick="confirmDeleteFromFullView('alumno', ${al.id})" title="Eliminar" style="background: #e74c3c; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer;">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+  
+  html += `
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  alumnosView.innerHTML = html;
+  
+  // Evento de búsqueda
+  setTimeout(() => {
+    const searchInput = document.getElementById('searchAlumnosFullView');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value || '';
+        alumnosPage = 1;
+        renderAlumnosFullView();
+      });
+    }
+  }, 100);
+}
+
+function closeAlumnosFullView() {
+  // Limpiar sessionStorage
+  sessionStorage.removeItem('alumnosFullViewActive');
+  sessionStorage.removeItem('alumnosPage');
+  
+  const alumnosView = document.getElementById('alumnosFullView');
+  if (alumnosView) {
+    alumnosView.remove();
+  }
+  document.querySelector('.mainpanel').style.display = 'block';
+  document.querySelector('.sidebar').style.display = 'block';
+  document.querySelector('.topbar').style.display = 'flex';
+  searchQuery = '';
+}
+
+function renderAlumnosModal() {
+  if (!allData.alumnos || allData.alumnos.length === 0) {
+    openModal(`
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2><i class="fas fa-user-graduate"></i> Lista de Alumnos</h2>
+          <button onclick="closeModal()" class="btn-close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <p class="empty">No hay alumnos</p>
+        </div>
+      </div>
+    `);
+    return;
+  }
+  
+  const term = (searchQuery || '').toLowerCase();
+  const items = allData.alumnos.filter(al => {
+    if (!term) return true;
+    return (al.nombre||'').toLowerCase().includes(term) || (al.apellido||'').toLowerCase().includes(term) || (al.dni||'').toLowerCase().includes(term);
+  });
+  
+  // Paginación
+  const totalPages = Math.ceil(items.length / alumnosPerPage);
+  const start = (alumnosPage - 1) * alumnosPerPage;
+  const end = start + alumnosPerPage;
+  const pageItems = items.slice(start, end);
+  
+  let html = `
+    <div class="modal-card modal-fullscreen">
+      <div class="modal-header">
+        <h2><i class="fas fa-user-graduate"></i> Lista de Alumnos</h2>
+        <button onclick="closeModal()" class="btn-close"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+          <input type="text" id="searchAlumnosModal" placeholder="🔍 Buscar alumno..." 
+                 style="width: 300px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;"
+                 value="${searchQuery || ''}">
+          
+          <!-- Controles de paginación arriba -->
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <button onclick="prevPageAlumnosModal()" ${alumnosPage <= 1 ? 'disabled' : ''} 
+                    style="background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: all 0.2s; ${alumnosPage <= 1 ? 'opacity: 0.4; cursor: not-allowed;' : ''}">
+              <i class="fas fa-chevron-left"></i> Anterior
+            </button>
+            <span style="font-size: 14px; font-weight: 600; color: #333; min-width: 200px; text-align: center;">
+              Página ${alumnosPage} de ${totalPages} | ${items.length} alumnos
+            </span>
+            <button onclick="nextPageAlumnosModal()" ${alumnosPage >= totalPages ? 'disabled' : ''} 
+                    style="background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: all 0.2s; ${alumnosPage >= totalPages ? 'opacity: 0.4; cursor: not-allowed;' : ''}">
+              Siguiente <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Tabla de alumnos -->
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; background: white;">
+            <thead>
+              <tr style="background: var(--primary); color: white;">
+                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Nombre</th>
+                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Apellido</th>
+                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">DNI</th>
+                <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Edad</th>
+                <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Género</th>
+                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Aula</th>
+                <th style="padding: 10px; text-align: center; border: 1px solid #ddd; width: 120px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+  `;
+  
+  pageItems.forEach((al, idx) => {
+    const aula = allData.aulas.find(a => a.id == al.aula_id);
+    const aulaName = aula ? aula.nombre : 'Sin aula';
+    const rowColor = idx % 2 === 0 ? '#f9f9f9' : 'white';
+    html += `
+      <tr style="background: ${rowColor};">
+        <td style="padding: 10px; border: 1px solid #ddd;">${al.nombre}</td>
+        <td style="padding: 10px; border: 1px solid #ddd;">${al.apellido}</td>
+        <td style="padding: 10px; border: 1px solid #ddd;">${al.dni}</td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${al.edad}</td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+          <i class="fas fa-${al.genero === 'Masculino' ? 'mars' : al.genero === 'Femenino' ? 'venus' : 'venus-mars'}" 
+             style="color: ${al.genero === 'Masculino' ? '#3498db' : '#e91e63'};"></i>
+          ${al.genero}
+        </td>
+        <td style="padding: 10px; border: 1px solid #ddd;">${aulaName}</td>
+        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+          <button class="btn-mini edit" onclick="openEditAlumnoById(${al.id})" title="Editar">
+            <i class="fas fa-pen"></i>
+          </button>
+          <button class="btn-mini del" onclick="confirmDelete('alumno', ${al.id})" title="Eliminar">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+  
+  html += `
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Controles de paginación abajo -->
+        <div style="margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 15px;">
+          <button onclick="prevPageAlumnosModal()" ${alumnosPage <= 1 ? 'disabled' : ''} 
+                  style="background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: all 0.2s; ${alumnosPage <= 1 ? 'opacity: 0.4; cursor: not-allowed;' : ''}">
+            <i class="fas fa-chevron-left"></i> Anterior
+          </button>
+          <span style="font-size: 14px; font-weight: 600; color: #333; min-width: 200px; text-align: center;">
+            Mostrando ${start + 1}-${Math.min(end, items.length)} de ${items.length}
+          </span>
+          <button onclick="nextPageAlumnosModal()" ${alumnosPage >= totalPages ? 'disabled' : ''} 
+                  style="background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: all 0.2s; ${alumnosPage >= totalPages ? 'opacity: 0.4; cursor: not-allowed;' : ''}">
+            Siguiente <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Abrir modal usando el gestor centralizado
+  openModal(html);
+  
+  // Evento de búsqueda
+  setTimeout(() => {
+    const searchInput = document.getElementById('searchAlumnosModal');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value || '';
+        alumnosPage = 1;
+        renderAlumnosModal();
+      });
+      searchInput.focus();
+    }
+  }, 100);
+  // El manejo de ESC lo hace openModal()
+}
+
+// Funciones de navegación del modal
+function nextPageAlumnosModal() {
+  const term = (searchQuery || '').toLowerCase();
+  const items = allData.alumnos.filter(al => {
+    if (!term) return true;
+    return (al.nombre||'').toLowerCase().includes(term) || (al.apellido||'').toLowerCase().includes(term) || (al.dni||'').toLowerCase().includes(term);
+  });
+  const totalPages = Math.ceil(items.length / alumnosPerPage);
+  if (alumnosPage < totalPages) {
+    alumnosPage++;
+    // Guardar página actual en sessionStorage
+    sessionStorage.setItem('alumnosPage', alumnosPage.toString());
+    // Verificar si estamos en vista fullscreen o modal
+    const fullView = document.getElementById('alumnosFullView');
+    if (fullView) {
+      renderAlumnosFullView();
+    } else {
+      renderAlumnosModal();
+    }
+  }
+}
+
+function prevPageAlumnosModal() {
+  if (alumnosPage > 1) {
+    alumnosPage--;
+    // Guardar página actual en sessionStorage
+    sessionStorage.setItem('alumnosPage', alumnosPage.toString());
+    // Verificar si estamos en vista fullscreen o modal
+    const fullView = document.getElementById('alumnosFullView');
+    if (fullView) {
+      renderAlumnosFullView();
+    } else {
+      renderAlumnosModal();
+    }
+  }
 }
 
 function renderInstituciones() {
@@ -305,7 +671,32 @@ function renderAlumnos() {
     return (al.nombre||'').toLowerCase().includes(term) || (al.apellido||'').toLowerCase().includes(term) || (al.dni||'').toLowerCase().includes(term);
   });
   
-  container.innerHTML = items.map(al => `
+  // Paginación
+  const totalPages = Math.ceil(items.length / alumnosPerPage);
+  const start = (alumnosPage - 1) * alumnosPerPage;
+  const end = start + alumnosPerPage;
+  const pageItems = items.slice(start, end);
+  
+  let html = '';
+  
+  // Controles de paginación arriba
+  if (items.length > alumnosPerPage) {
+    html += `
+      <div class="pagination-controls">
+        <button onclick="prevPageAlumnos()" ${alumnosPage <= 1 ? 'disabled' : ''} class="btn-page">
+          <i class="fas fa-chevron-left"></i> Anterior
+        </button>
+        <span class="page-info">Página ${alumnosPage} de ${totalPages} | Total: ${items.length} alumnos</span>
+        <button onclick="nextPageAlumnos()" ${alumnosPage >= totalPages ? 'disabled' : ''} class="btn-page">
+          Siguiente <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    `;
+  }
+  
+  // Cards de alumnos
+  html += '<div class="cards-grid">';
+  html += pageItems.map(al => `
     <div class="card">
       <div class="card-header">
         <h3><i class="fas fa-user-graduate"></i> ${al.nombre} ${al.apellido}</h3>
@@ -317,9 +708,52 @@ function renderAlumnos() {
       <div class="card-body">
         <p><i class="fas fa-id-card"></i> DNI: ${al.dni}</p>
         <p><i class="fas fa-calendar"></i> ${al.edad} años</p>
+        <p><i class="fas fa-${al.genero === 'Masculino' ? 'mars' : al.genero === 'Femenino' ? 'venus' : 'venus-mars'}"></i> ${al.genero}</p>
       </div>
     </div>
   `).join('');
+  html += '</div>';
+  
+  // Controles de paginación abajo
+  if (items.length > alumnosPerPage) {
+    html += `
+      <div class="pagination-controls">
+        <button onclick="prevPageAlumnos()" ${alumnosPage <= 1 ? 'disabled' : ''} class="btn-page">
+          <i class="fas fa-chevron-left"></i> Anterior
+        </button>
+        <span class="page-info">Mostrando ${start + 1}-${Math.min(end, items.length)} de ${items.length}</span>
+        <button onclick="nextPageAlumnos()" ${alumnosPage >= totalPages ? 'disabled' : ''} class="btn-page">
+          Siguiente <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    `;
+  }
+  
+  container.innerHTML = html;
+}
+
+// Funciones de paginación
+function nextPageAlumnos() {
+  const term = (searchQuery || '').toLowerCase();
+  const items = allData.alumnos.filter(al => {
+    if (!term) return true;
+    return (al.nombre||'').toLowerCase().includes(term) || (al.apellido||'').toLowerCase().includes(term) || (al.dni||'').toLowerCase().includes(term);
+  });
+  const totalPages = Math.ceil(items.length / alumnosPerPage);
+  if (alumnosPage < totalPages) {
+    alumnosPage++;
+    renderAlumnos();
+    // Scroll suave al inicio de la sección
+    document.getElementById('sec-alumnos').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function prevPageAlumnos() {
+  if (alumnosPage > 1) {
+    alumnosPage--;
+    renderAlumnos();
+    document.getElementById('sec-alumnos').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function renderPruebas() {
@@ -366,16 +800,33 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAll();
   });
   
+  // Botón Ver Alumnos - Redirige a página dedicada
+  const viewAlumnosBtn = document.getElementById('viewAlumnosBtn');
+  if (viewAlumnosBtn) {
+    viewAlumnosBtn.addEventListener('click', () => {
+      window.location.href = 'alumnos.html';
+    });
+  }
+  
   const search = document.getElementById('searchInput');
   if (search) {
     search.addEventListener('input', (e) => {
       searchQuery = e.target.value || '';
+      alumnosPage = 1; // Resetear a página 1 al buscar
       renderMain();
     });
   }
   
   setupButtons();
   loadAll();
+  
+  // Restaurar vista de alumnos si estaba activa antes de recargar
+  setTimeout(() => {
+    const wasActive = sessionStorage.getItem('alumnosFullViewActive');
+    if (wasActive === 'true') {
+      openAlumnosModal();
+    }
+  }, 500); // Esperar a que carguen los datos
 });
 
 function setupButtons() {
@@ -462,6 +913,8 @@ function setupNewInstitucion() {
 
 function setupNewProfesor() {
   document.getElementById('newProfesorBtn').addEventListener('click', () => {
+    const optsInst = allData.instituciones.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
+    
     openModal(`
       <div class="modal-card">
         <div class="modal-header">
@@ -481,6 +934,17 @@ function setupNewProfesor() {
             <div class="form-group">
               <label><i class="fas fa-id-card"></i> DNI</label>
               <input type="text" name="dni" required>
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-building"></i> Institución</label>
+              <select name="institucion_id" required>
+                <option value="">Seleccione...</option>
+                ${optsInst}
+              </select>
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-graduation-cap"></i> Especialidad/Materias que dicta</label>
+              <textarea name="especialidad" rows="3" placeholder="Ej: Matemática, Física, Química"></textarea>
             </div>
             <button type="submit" class="btn primary"><i class="fas fa-save"></i> Guardar</button>
           </form>
@@ -505,7 +969,7 @@ function setupNewProfesor() {
           closeModal();
           loadAll();
         } else {
-          showToast('Error', 'error');
+          showToast(result.error || 'Error', 'error');
         }
       } catch (error) {
         showToast('Error de conexión', 'error');
@@ -642,7 +1106,7 @@ function setupNewAula() {
 
 function setupNewAlumno() {
   document.getElementById('newAlumnoBtn').addEventListener('click', () => {
-    const optsAula = allData.aulas.map(a => `<option value="${a.id}">${a.nombre}</option>`).join('');
+    const optsInst = allData.instituciones.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
     
     openModal(`
       <div class="modal-card">
@@ -652,6 +1116,20 @@ function setupNewAlumno() {
         </div>
         <div class="modal-body">
           <form id="formAlumno">
+            <div class="form-group">
+              <label><i class="fas fa-building"></i> 1. Institución</label>
+              <select id="selInstAlumno" required>
+                <option value="">Seleccione...</option>
+                ${optsInst}
+              </select>
+            </div>
+            <div class="form-group" id="aulaGroupAlumno" style="display:none;">
+              <label><i class="fas fa-door-open"></i> 2. Aula</label>
+              <select name="aula_id" id="selAulaAlumno" required>
+                <option value="">Seleccione...</option>
+              </select>
+            </div>
+            <hr>
             <div class="form-group">
               <label><i class="fas fa-user"></i> Nombre</label>
               <input type="text" name="nombre" required>
@@ -677,18 +1155,27 @@ function setupNewAlumno() {
                 <option value="Otro">Otro</option>
               </select>
             </div>
-            <div class="form-group">
-              <label><i class="fas fa-door-open"></i> Aula</label>
-              <select name="aula_id" required>
-                <option value="">Seleccione...</option>
-                ${optsAula}
-              </select>
-            </div>
             <button type="submit" class="btn primary"><i class="fas fa-save"></i> Guardar</button>
           </form>
         </div>
       </div>
     `);
+    
+    // Filtrar aulas por institución
+    document.getElementById('selInstAlumno').addEventListener('change', (e) => {
+      const instId = e.target.value;
+      const aulaGroup = document.getElementById('aulaGroupAlumno');
+      const selAula = document.getElementById('selAulaAlumno');
+      
+      if (instId) {
+        const aulasInst = allData.aulas.filter(a => a.institucion_id == instId);
+        const opts = aulasInst.map(a => `<option value="${a.id}">${a.nombre} - ${a.grado||''}</option>`).join('');
+        selAula.innerHTML = '<option value="">Seleccione...</option>' + opts;
+        aulaGroup.style.display = 'block';
+      } else {
+        aulaGroup.style.display = 'none';
+      }
+    });
     
     document.getElementById('formAlumno').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -707,7 +1194,7 @@ function setupNewAlumno() {
           closeModal();
           loadAll();
         } else {
-          showToast('Error', 'error');
+          showToast(result.error || 'Error', 'error');
         }
       } catch (error) {
         showToast('Error de conexión', 'error');
@@ -1148,3 +1635,101 @@ function openEditMateriaById(id){ const mat = (allData?.materias||[]).find(x=> N
 function openEditAulaById(id){ const aula = (allData?.aulas||[]).find(x=> Number(x.id)===Number(id)); if(aula) openEditAula(aula); }
 function openEditAlumnoById(id){ const al = (allData?.alumnos||[]).find(x=> Number(x.id)===Number(id)); if(al) openEditAlumno(al); }
 function openEditPruebaById(id){ const p = (allData?.pruebas||[]).find(x=> Number(x.id)===Number(id)); if(p) openEditPrueba(p); }
+
+// Funciones especiales para edición/eliminación desde vista fullscreen de alumnos
+window.openEditAlumnoFromFullView = function(id) {
+  const al = (allData?.alumnos||[]).find(x=> Number(x.id)===Number(id));
+  if (!al) return;
+  
+  const optsAula = allData.aulas.map(a => `<option value="${a.id}" ${Number(al.aula_id)===Number(a.id)?'selected':''}>${a.nombre}</option>`).join('');
+  openModal(`
+    <div class="modal-card"><div class="modal-header"><h2><i class="fas fa-user-graduate"></i> Editar Alumno</h2><button onclick="closeModal()" class="btn-close"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body"><form id="formEditAlumnoFullView">
+      <div class="form-group"><label><i class="fas fa-user"></i> Nombre</label><input name="nombre" value="${al.nombre||''}" required></div>
+      <div class="form-group"><label><i class="fas fa-user"></i> Apellido</label><input name="apellido" value="${al.apellido||''}" required></div>
+      <div class="form-group"><label><i class="fas fa-id-card"></i> DNI</label><input name="dni" value="${al.dni||''}" required></div>
+      <div class="form-group"><label><i class="fas fa-calendar"></i> Edad</label><input type="number" name="edad" value="${al.edad||''}" required></div>
+      <div class="form-group"><label><i class="fas fa-venus-mars"></i> Género</label>
+        <select name="genero" required>
+          <option value="">Seleccione...</option>
+          <option ${al.genero==='Masculino'?'selected':''}>Masculino</option>
+          <option ${al.genero==='Femenino'?'selected':''}>Femenino</option>
+          <option ${al.genero==='Otro'?'selected':''}>Otro</option>
+        </select>
+      </div>
+      <div class="form-group"><label><i class="fas fa-door-open"></i> Aula</label><select name="aula_id" required><option value="">Seleccione...</option>${optsAula}</select></div>
+      <button class="btn primary" type="submit"><i class="fas fa-save"></i> Guardar</button>
+    </form></div></div>`);
+    
+  document.getElementById('formEditAlumnoFullView').addEventListener('submit', async (e)=>{
+    e.preventDefault(); 
+    const data = Object.fromEntries(new FormData(e.target));
+    try { 
+      const r = await fetch(`api.php?action=update_alumno&id=${al.id}`, {method:'POST', body: JSON.stringify(data)}); 
+      const j = await r.json(); 
+      if(j.ok) { 
+        showToast('Actualizado','success'); 
+        closeModal(); 
+        await loadAll(); // Recargar datos
+        renderAlumnosFullView(); // Re-renderizar la vista fullscreen
+      } else { 
+        showToast('Error','error'); 
+      } 
+    } catch(err) { 
+      showToast('Error de conexión','error'); 
+    }
+  });
+}
+
+window.confirmDeleteFromFullView = async function(entity, id){
+  if (typeof Swal === 'undefined') { 
+    if(!confirm('¿Eliminar?')) return; 
+  } else {
+    const res = await Swal.fire({
+      title: '¿Eliminar?',
+      text: 'Esta acción no se puede deshacer',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+    if(!res.isConfirmed) return;
+  }
+  
+  const map = {
+    institucion:'delete_institucion', aula:'delete_aula', alumno:'delete_alumno', profesor:'delete_profesor', materia:'delete_materia', prueba:'delete_prueba', nota:'delete_nota'
+  };
+  const action = map[entity];
+  if(!action){ showToast('Acción no soportada', 'error'); return; }
+  
+  try{
+    const r = await fetch(`api.php?action=${action}&id=${id}`);
+    const j = await r.json();
+    if(j.ok) { 
+      showToast('Eliminado', 'success'); 
+      await loadAll(); // Recargar datos
+      
+      // Verificar si todavía hay items en la página actual después de eliminar
+      const filtered = allData.alumnos.filter(a => {
+        if (!searchQuery) return true;
+        const q = searchQuery.toLowerCase();
+        return a.nombre.toLowerCase().includes(q) || 
+               a.apellido.toLowerCase().includes(q) || 
+               a.dni.includes(q);
+      });
+      const totalPages = Math.ceil(filtered.length / 15);
+      
+      // Si la página actual ya no existe, ir a la última página disponible
+      if (alumnosPage > totalPages && totalPages > 0) {
+        alumnosPage = totalPages;
+      }
+      
+      renderAlumnosFullView(); // Re-renderizar la vista fullscreen
+    } else { 
+      showToast('Error al eliminar', 'error'); 
+    }
+  } catch(e) { 
+    showToast('Error de conexión', 'error'); 
+  }
+}
+

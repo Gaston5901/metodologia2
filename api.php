@@ -37,8 +37,16 @@ if($action=='add_institucion'){
 }
 
 if($action=='add_profesor'){
-  $n=esc($input['nombre']); $a=esc($input['apellido']); $dni=esc($input['dni']);
-  $mysqli->query("INSERT INTO profesores(nombre,apellido,dni) VALUES('{$n}','{$a}','{$dni}')");
+  $n=esc($input['nombre']); $a=esc($input['apellido']); $dni=esc($input['dni']); 
+  $inst=intval($input['institucion_id']??0); $esp=esc($input['especialidad']??'');
+  
+  // Validar DNI único
+  $check = $mysqli->query("SELECT id FROM profesores WHERE dni='{$dni}'");
+  if($check && $check->num_rows > 0){
+    echo json_encode(["ok"=>0, "error"=>"DNI ya existe"]); exit;
+  }
+  
+  $mysqli->query("INSERT INTO profesores(nombre,apellido,dni,institucion_id,especialidad) VALUES('{$n}','{$a}','{$dni}',{$inst},'{$esp}')");
   echo json_encode(["ok"=>1]); exit;
 }
 
@@ -56,6 +64,13 @@ if($action=='add_aula'){
 
 if($action=='add_alumno'){
   $n=esc($input['nombre']); $a=esc($input['apellido']); $dni=esc($input['dni']); $edad=intval($input['edad']); $gen=esc($input['genero']); $aula=intval($input['aula_id']);
+  
+  // Validar DNI único
+  $check = $mysqli->query("SELECT id FROM alumnos WHERE dni='{$dni}'");
+  if($check && $check->num_rows > 0){
+    echo json_encode(["ok"=>0, "error"=>"DNI ya existe"]); exit;
+  }
+  
   $row = $mysqli->query("SELECT institucion_id FROM aulas WHERE id={$aula}")->fetch_assoc();
   $inst = $row ? intval($row['institucion_id']) : "NULL";
   $mysqli->query("INSERT INTO alumnos(nombre,apellido,dni,edad,genero,aula_id,institucion_id) VALUES('{$n}','{$a}','{$dni}',{$edad},'{$gen}',{$aula},{$inst})");
@@ -76,8 +91,27 @@ if($action=='add_nota'){
 
 if($action=='add_aula_materia'){
   $aula=intval($input['aula_id']); $mat=intval($input['materia_id']); $prof=intval($input['profesor_id']);
+  
+  // Validar que no exista ya esta combinación
+  $check = $mysqli->query("SELECT id FROM aula_materia WHERE aula_id={$aula} AND materia_id={$mat}");
+  if($check && $check->num_rows > 0){
+    echo json_encode(["ok"=>0, "error"=>"Esta materia ya está asignada a esta aula"]); exit;
+  }
+  
   $mysqli->query("INSERT INTO aula_materia(aula_id,materia_id,profesor_id) VALUES({$aula},{$mat},".($prof? $prof:"NULL").")");
   echo json_encode(["ok"=>1]); exit;
+}
+
+// Listar aula_materia de un aula específica
+if($action=='get_aula_materias' && isset($_GET['aula_id'])){
+  $aula=intval($_GET['aula_id']);
+  $sql = "SELECT am.*, m.nombre as materia_nombre, p.nombre as profesor_nombre, p.apellido as profesor_apellido 
+          FROM aula_materia am 
+          JOIN materias m ON am.materia_id = m.id 
+          LEFT JOIN profesores p ON am.profesor_id = p.id 
+          WHERE am.aula_id = {$aula}";
+  $res = all($mysqli->query($sql));
+  echo json_encode($res); exit;
 }
 
 if($action=='get_notas_alumno' && isset($_GET['id'])){
@@ -163,7 +197,15 @@ if($action=='update_institucion' && isset($_GET['id'])){
 if($action=='update_profesor' && isset($_GET['id'])){
   $id = intval($_GET['id']);
   $n=esc($input['nombre']??''); $a=esc($input['apellido']??''); $dni=esc($input['dni']??'');
-  $ok = $mysqli->query("UPDATE profesores SET nombre='{$n}', apellido='{$a}', dni='{$dni}' WHERE id={$id}");
+  $inst=intval($input['institucion_id']??0); $esp=esc($input['especialidad']??'');
+  
+  // Validar DNI único (excepto el mismo registro)
+  $check = $mysqli->query("SELECT id FROM profesores WHERE dni='{$dni}' AND id != {$id}");
+  if($check && $check->num_rows > 0){
+    echo json_encode(["ok"=>0, "error"=>"DNI ya existe"]); exit;
+  }
+  
+  $ok = $mysqli->query("UPDATE profesores SET nombre='{$n}', apellido='{$a}', dni='{$dni}', institucion_id={$inst}, especialidad='{$esp}' WHERE id={$id}");
   echo json_encode(["ok"=> $ok?1:0]); exit;
 }
 
@@ -184,6 +226,13 @@ if($action=='update_aula' && isset($_GET['id'])){
 if($action=='update_alumno' && isset($_GET['id'])){
   $id = intval($_GET['id']);
   $n=esc($input['nombre']??''); $a=esc($input['apellido']??''); $dni=esc($input['dni']??''); $edad=intval($input['edad']??0); $gen=esc($input['genero']??''); $aula=intval($input['aula_id']??0);
+  
+  // Validar DNI único (excepto el mismo)
+  $check = $mysqli->query("SELECT id FROM alumnos WHERE dni='{$dni}' AND id != {$id}");
+  if($check && $check->num_rows > 0){
+    echo json_encode(["ok"=>0, "error"=>"DNI ya existe"]); exit;
+  }
+  
   $row = $mysqli->query("SELECT institucion_id FROM aulas WHERE id={$aula}")->fetch_assoc();
   $inst = $row ? intval($row['institucion_id']) : "NULL";
   $ok = $mysqli->query("UPDATE alumnos SET nombre='{$n}', apellido='{$a}', dni='{$dni}', edad={$edad}, genero='{$gen}', aula_id={$aula}, institucion_id={$inst} WHERE id={$id}");
