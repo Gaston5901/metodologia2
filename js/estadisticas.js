@@ -9,7 +9,7 @@ let filter = { instId: '', aulaId: '' };
 
 async function loadAll() {
   try {
-    const res = await fetch('api.php?action=get_all');
+    const res = await fetch('../api.php?action=get_all');
     allData = await res.json();
 
     // Poblar selector de instituciones

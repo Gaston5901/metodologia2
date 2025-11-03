@@ -84,7 +84,7 @@ function setupFormSubmit() {
 // Cargar pruebas desde la API
 async function loadPruebas() {
   try {
-    const response = await fetch('api.php?action=get_all');
+    const response = await fetch('../api.php?action=get_all');
     const data = await response.json();
     
     console.log('Datos recibidos:', data); // Debug
@@ -339,7 +339,7 @@ async function saveEdit() {
     
     console.log('Enviando datos al servidor...');
     
-    const response = await fetch('api.php', {
+    const response = await fetch('../api.php', {
       method: 'POST',
       body: formData
     });
@@ -409,7 +409,7 @@ async function deletePrueba(id) {
     
     console.log('Enviando solicitud de eliminación...');
     
-    const response = await fetch('api.php', {
+    const response = await fetch('../api.php', {
       method: 'POST',
       body: formData
     });

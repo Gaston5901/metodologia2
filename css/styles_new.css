@@ -40,11 +40,13 @@ body {
 .topbar {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: white;
-  padding: 1rem 2rem;
-  box-shadow: var(--shadow-md);
+  padding: 0.40rem 1rem; /* menos grueso */
+  box-shadow: var(--shadow-sm); /* sombra más sutil */
   position: sticky;
   top: 0;
   z-index: 100;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  backdrop-filter: blur(4px);
 }
 
 .topbar-content {
@@ -53,24 +55,42 @@ body {
   justify-content: space-between;
   max-width: 1400px;
   margin: 0 auto;
-}
-
-.topbar h1 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
+  height: 56px; /* altura compacta y consistente */
   gap: 0.75rem;
 }
 
+.topbar h1 {
+  font-size: 1.125rem; /* más pequeño */
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+}
+
 .topbar h1 i {
-  font-size: 2rem;
+  font-size: 1.45rem; /* icono menos dominante */
+  line-height: 1;
 }
 
 .top-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
+}
+
+/* Ajustes para que la barra de búsqueda y botones queden mejor alineados */
+.topbar .searchbar {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+}
+
+@media (max-width: 968px) {
+  .topbar-content { height: auto; padding: 0.5rem 0; }
+  .topbar { padding: 0.5rem 0.75rem; }
 }
 
 .searchbar {
@@ -167,7 +187,7 @@ body {
   align-items: center;
   gap: 0.625rem;
   width: 100%;
-  padding: 0.875rem 1rem;
+  padding: 0.36rem 1rem;
   margin-bottom: 0.5rem;
   background: var(--card);
   border: 2px solid var(--border);
@@ -183,7 +203,7 @@ body {
 .btn:hover {
   transform: translateX(4px);
   border-color: var(--primary);
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+ 
   box-shadow: var(--shadow-sm);
 }
 
@@ -549,10 +569,11 @@ body {
   animation: modalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Variante angosta para formularios de creación */
+/* Variante angosta para formularios de creación - OPTIMIZADA */
 .modal-card.modal-narrow {
   max-width: 560px;
   margin: 0 auto;
+  max-height: 88vh; /* Más altura disponible */
 }
 
 /* Modal de estadísticas: más angosto y con paddings reducidos */
@@ -602,48 +623,101 @@ body {
   .stats-filters { grid-template-columns: 1fr; }
 }
 
+/* HEADER COMPACTO para modales narrow */
 .modal-card.modal-narrow .modal-header {
-  padding: 1.25rem 1.5rem;
+  padding: 0.9rem 1.25rem; /* Más compacto */
 }
 
+.modal-card.modal-narrow .modal-header h2 {
+  font-size: 1.25rem; /* Título más pequeño */
+}
+
+/* BODY MÁS ESPACIOSO con scroll suave */
 .modal-card.modal-narrow .modal-body {
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.5rem; /* Padding reducido */
   flex: 1 1 auto;
   min-height: 0;
-  overflow-y: auto; /* asegura que se vea el botón de abajo */
+  overflow-y: auto;
+  max-height: calc(88vh - 90px); /* Resta header + margen */
 }
 
-/* Compactación de formularios SOLO en modales angostos */
+/* FORMULARIOS ULTRA COMPACTOS */
 .modal-card.modal-narrow .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem; /* Antes era 1rem */
 }
 
 .modal-card.modal-narrow .form-group label {
-  font-size: 0.95rem;
-  margin-bottom: 0.5rem;
+  font-size: 0.9rem; /* Más pequeño */
+  margin-bottom: 0.35rem; /* Menos espacio */
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
+.modal-card.modal-narrow .form-group label i {
+  font-size: 0.85rem;
+  color: var(--primary);
+}
+
+/* INPUTS Y SELECTS MÁS COMPACTOS */
 .modal-card.modal-narrow .form-group input,
 .modal-card.modal-narrow .form-group select,
 .modal-card.modal-narrow .form-group textarea {
-  padding: 0.7rem 0.9rem;
-  font-size: 0.95rem;
+  padding: 0.6rem 0.8rem; /* Antes 0.7/0.9 */
+  font-size: 0.9rem; /* Más pequeño */
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  transition: var(--transition);
+}
+
+.modal-card.modal-narrow .form-group input:focus,
+.modal-card.modal-narrow .form-group select:focus,
+.modal-card.modal-narrow .form-group textarea:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+/* BOTÓN MÁS COMPACTO */
+.modal-card.modal-narrow .btn.primary {
+  padding: 0.65rem 1.25rem; /* Más delgado */
+  font-size: 0.9rem;
+  margin-top: 0.5rem; /* Menos espacio arriba */
+}
+
+/* SCROLL PERSONALIZADO para mejor UX */
+.modal-card.modal-narrow .modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-card.modal-narrow .modal-body::-webkit-scrollbar-track {
+  background: var(--bg);
   border-radius: 10px;
 }
 
-.modal-card.modal-narrow .btn.primary {
-  padding: 0.75rem 1rem;
-  font-size: 0.95rem;
+.modal-card.modal-narrow .modal-body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+.modal-card.modal-narrow .modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
 @media (max-width: 640px) {
   .modal-card.modal-narrow {
     max-width: 92vw;
+    max-height: 92vh;
+  }
+  
+  .modal-card.modal-narrow .modal-body {
+    max-height: calc(92vh - 80px);
   }
 }
 
 .modal-header {
-    padding: 2rem 2.5rem;
+    padding: 1rem 2.5rem;
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: white;
   display: flex;

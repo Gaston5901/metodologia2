@@ -796,7 +796,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const viewAlumnosBtn = document.getElementById('viewAlumnosBtn');
   if (viewAlumnosBtn) {
     viewAlumnosBtn.addEventListener('click', () => {
-      window.location.href = 'alumnos.html';
+      window.location.href = 'html/alumnos.html';
     });
   }
   
@@ -804,7 +804,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const viewPruebasBtn = document.getElementById('viewPruebasBtn');
   if (viewPruebasBtn) {
     viewPruebasBtn.addEventListener('click', () => {
-      window.location.href = 'pruebas.html';
+      window.location.href = 'html/pruebas.html';
     });
   }
   
@@ -1396,7 +1396,7 @@ function setupNewNota() {
 
 function setupEstadisticas() {
   document.getElementById('viewStatsBtn').addEventListener('click', () => {
-    window.location.href = 'estadisticas.html';
+    window.location.href = 'html/estadisticas.html';
   });
 }
 

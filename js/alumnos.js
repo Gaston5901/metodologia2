@@ -68,7 +68,7 @@ function setupModalClose() {
 // Cargar alumnos desde la API
 async function loadAlumnos() {
   try {
-    const response = await fetch('api.php?action=get_all');
+    const response = await fetch('../api.php?action=get_all');
     const data = await response.json();
     
     // La API devuelve directamente los arrays, no un objeto con "ok"
@@ -304,7 +304,7 @@ async function saveEdit() {
   };
   
   try {
-    const response = await fetch(`api.php?action=update_alumno&id=${id}`, {
+    const response = await fetch(`../api.php?action=update_alumno&id=${id}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -358,7 +358,7 @@ async function confirmDelete(id) {
 // Eliminar alumno
 async function deleteAlumno(id) {
   try {
-    const response = await fetch(`api.php?action=delete_alumno&id=${id}`);
+    const response = await fetch(`../api.php?action=delete_alumno&id=${id}`);
     const result = await response.json();
     
     if (result.ok) {
@@ -474,7 +474,7 @@ async function viewNotas(alumnoId) {
   try {
     console.log('Cargando datos del API...');
     // Obtener todas las notas del alumno
-    const response = await fetch(`api.php?action=get_all`);
+    const response = await fetch(`../api.php?action=get_all`);
     const data = await response.json();
     
     console.log('Datos recibidos del API:', data);
