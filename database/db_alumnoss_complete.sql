@@ -3,7 +3,7 @@
 -- db_alumnoss - Sistema Académico Multi-Institución
 -- =====================================================
 
-DROP DATABASE IF EXISTS db_alumnoss;
+
 CREATE DATABASE db_alumnoss CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE db_alumnoss;
 

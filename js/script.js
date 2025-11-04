@@ -11,6 +11,38 @@ let alumnosPage = 1;
 const alumnosPerPage = 15;
 
 // ========================================
+// HELPERS
+// ========================================
+function generateSortedOptions(items, textKey, valueKey = 'id') {
+  if (!items || !Array.isArray(items)) return '';
+  const sorted = [...items].sort((a, b) => {
+    const textA = typeof textKey === 'function' ? textKey(a) : (a[textKey] || '');
+    const textB = typeof textKey === 'function' ? textKey(b) : (b[textKey] || '');
+    return textA.localeCompare(textB, 'es', { sensitivity: 'base' });
+  });
+  return sorted.map(item => {
+    const value = item[valueKey];
+    const text = typeof textKey === 'function' ? textKey(item) : item[textKey];
+    return `<option value="${value}">${text}</option>`;
+  }).join('');
+}
+
+function generateSortedOptionsSelected(items, textKey, valueKey = 'id', selectedValue) {
+  if (!items || !Array.isArray(items)) return '';
+  const sorted = [...items].sort((a, b) => {
+    const textA = typeof textKey === 'function' ? textKey(a) : (a[textKey] || '');
+    const textB = typeof textKey === 'function' ? textKey(b) : (b[textKey] || '');
+    return textA.localeCompare(textB, 'es', { sensitivity: 'base' });
+  });
+  return sorted.map(item => {
+    const value = item[valueKey];
+    const text = typeof textKey === 'function' ? textKey(item) : item[textKey];
+    const selected = String(value) === String(selectedValue) ? 'selected' : '';
+    return `<option value="${value}" ${selected}>${text}</option>`;
+  }).join('');
+}
+
+// ========================================
 // SISTEMA DE NOTIFICACIONES TOAST
 // ========================================
 function showToast(message, type = 'info') {
@@ -116,6 +148,10 @@ async function loadAll() {
 function renderMain() {
   const list = document.getElementById('list');
   
+  // Guardar qué secciones estaban abiertas antes del re-render
+  const openSectionIds = Array.from(document.querySelectorAll('.section.collapsible:not(.collapsed)'))
+    .map(sec => sec.id);
+  
   list.innerHTML = `
     <div class="section collapsible collapsed" id="sec-instituciones">
       <div class="section-header" data-target="instituciones-list">
@@ -156,9 +192,8 @@ function renderMain() {
         <div id="materias-list" class="cards-grid"></div>
       </div>
     </div>
-    
-
   `;
+  
   // toggles acordeón
   document.querySelectorAll('.section.collapsible .section-header').forEach(h => {
     h.addEventListener('click', () => {
@@ -167,12 +202,18 @@ function renderMain() {
     });
   });
   
+  // Restaurar estado abierto de acordeones tras el re-render
+  if (openSectionIds && openSectionIds.length > 0) {
+    openSectionIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('collapsed');
+    });
+  }
+  
   renderInstituciones();
   renderAulas();
   renderProfesores();
   renderMaterias();
-  // Alumnos se muestra en modal, no en acordeón
-  // renderPruebas();
 }
 
 // Modal especial para lista de alumnos
@@ -552,6 +593,11 @@ function renderInstituciones() {
     return (inst.nombre||'').toLowerCase().includes(term) || (inst.localidad||'').toLowerCase().includes(term);
   });
   
+  if (items.length === 0) {
+    container.innerHTML = `<p class="empty">Sin resultados${term ? ` para "${searchQuery}"` : ''}</p>`;
+    return;
+  }
+  
   container.innerHTML = items.map(inst => `
     <div class="card">
       <div class="card-header">
@@ -580,6 +626,11 @@ function renderAulas() {
     if (!term) return true;
     return (aula.nombre||'').toLowerCase().includes(term) || (aula.grado||'').toLowerCase().includes(term) || (aula.profesor_name||'').toLowerCase().includes(term) || (aula.profesor_apellido||'').toLowerCase().includes(term);
   });
+  
+  if (items.length === 0) {
+    container.innerHTML = `<p class="empty">Sin resultados${term ? ` para "${searchQuery}"` : ''}</p>`;
+    return;
+  }
   
   container.innerHTML = items.map(aula => `
     <div class="card">
@@ -610,6 +661,11 @@ function renderProfesores() {
     return (prof.nombre||'').toLowerCase().includes(term) || (prof.apellido||'').toLowerCase().includes(term) || (prof.dni||'').toLowerCase().includes(term);
   });
   
+  if (items.length === 0) {
+    container.innerHTML = `<p class="empty">Sin resultados${term ? ` para "${searchQuery}"` : ''}</p>`;
+    return;
+  }
+  
   container.innerHTML = items.map(prof => `
     <div class="card">
       <div class="card-header">
@@ -637,6 +693,11 @@ function renderMaterias() {
     if (!term) return true;
     return (mat.nombre||'').toLowerCase().includes(term);
   });
+  
+  if (items.length === 0) {
+    container.innerHTML = `<p class="empty">Sin resultados${term ? ` para "${searchQuery}"` : ''}</p>`;
+    return;
+  }
   
   container.innerHTML = items.map(mat => `
     <div class="card">
@@ -1451,17 +1512,37 @@ function openEditInstitucion(inst){
 }
 
 function openEditProfesor(prof){
+  const optsInst = generateSortedOptionsSelected(allData.instituciones, 'nombre', 'id', prof.institucion_id);
   openModal(`
     <div class="modal-card"><div class="modal-header"><h2><i class="fas fa-chalkboard-teacher"></i> Editar Profesor</h2><button onclick="closeModal()" class="btn-close"><i class="fas fa-times"></i></button></div>
     <div class="modal-body"><form id="formEditProfesor">
       <div class="form-group"><label><i class="fas fa-user"></i> Nombre</label><input name="nombre" value="${prof.nombre||''}" required></div>
       <div class="form-group"><label><i class="fas fa-user"></i> Apellido</label><input name="apellido" value="${prof.apellido||''}" required></div>
       <div class="form-group"><label><i class="fas fa-id-card"></i> DNI</label><input name="dni" value="${prof.dni||''}" required></div>
+      <div class="form-group"><label><i class="fas fa-building"></i> Institución</label><select name="institucion_id" required><option value="">Seleccione...</option>${optsInst}</select></div>
+      <div class="form-group"><label><i class="fas fa-graduation-cap"></i> Especialidad</label><textarea name="especialidad" rows="2">${prof.especialidad||''}</textarea></div>
       <button class="btn primary" type="submit"><i class="fas fa-save"></i> Guardar</button>
     </form></div></div>`);
   document.getElementById('formEditProfesor').addEventListener('submit', async (e)=>{
-    e.preventDefault(); const data=Object.fromEntries(new FormData(e.target));
-    try{ const r=await fetch(`api.php?action=update_profesor&id=${prof.id}`,{method:'POST', body: JSON.stringify(data)}); const j=await r.json(); if(j.ok){ showToast('Actualizado','success'); closeModal(); loadAll(); } else { showToast('Error','error'); } }catch(err){ showToast('Error de conexión','error'); }
+    e.preventDefault(); 
+    const data=Object.fromEntries(new FormData(e.target));
+    try{
+      const r = await fetch(`api.php?action=update_profesor&id=${prof.id}`,{
+        method:'POST', 
+        headers:{'Content-Type':'application/json'}, 
+        body: JSON.stringify(data)
+      });
+      const j = await r.json(); 
+      if(j.ok){ 
+        showToast('Actualizado','success'); 
+        closeModal(); 
+        loadAll(); 
+      } else { 
+        showToast(j.error||'Error','error'); 
+      }
+    }catch(err){ 
+      showToast('Error de conexión','error'); 
+    }
   });
 }
 
