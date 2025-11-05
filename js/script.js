@@ -632,11 +632,16 @@ function renderAulas() {
     return;
   }
   
-  container.innerHTML = items.map(aula => `
+  container.innerHTML = items.map(aula => {
+    const numMaterias = (allData.aula_materia || []).filter(am => am.aula_id == aula.id).length;
+    return `
     <div class="card">
       <div class="card-header">
         <h3><i class="fas fa-door-open"></i> ${aula.nombre}</h3>
         <div class="card-actions">
+          <button class="btn-mini" onclick="gestionarMateriasAula(${aula.id})" style="border-color: #8b5cf6; color: #8b5cf6;" title="Gestionar Materias">
+            <i class="fas fa-book"></i> ${numMaterias}
+          </button>
           <button class="btn-mini edit" onclick="openEditAulaById(${aula.id})"><i class="fas fa-pen"></i></button>
           <button class="btn-mini del" onclick="confirmDelete('aula', ${aula.id})"><i class="fas fa-trash"></i></button>
         </div>
@@ -644,9 +649,11 @@ function renderAulas() {
       <div class="card-body">
         <p><i class="fas fa-graduation-cap"></i> Grado: ${aula.grado || 'N/A'}</p>
         <p><i class="fas fa-chalkboard-teacher"></i> ${aula.profesor_name ? aula.profesor_name + ' ' + aula.profesor_apellido : 'Sin profesor'}</p>
+        <p><i class="fas fa-book"></i> Materias: <strong>${numMaterias}</strong></p>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function renderProfesores() {
@@ -1080,18 +1087,22 @@ function setupNewMateria() {
       try {
         const res = await fetch('api.php?action=add_materia', {
           method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify(data)
         });
         const result = await res.json();
         
         if (result.ok) {
-          showToast('Materia agregada', 'success');
+          showToast('Materia creada exitosamente', 'success');
           closeModal();
           loadAll();
         } else {
-          showToast('Error', 'error');
+          showToast(result.error || 'Error al crear materia', 'error');
         }
       } catch (error) {
+        console.error('Error:', error);
         showToast('Error de conexión', 'error');
       }
     });
@@ -1100,11 +1111,23 @@ function setupNewMateria() {
 
 function setupNewAula() {
   document.getElementById('newAulaBtn').addEventListener('click', () => {
-    const optsInst = allData.instituciones.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
-    const optsProf = allData.profesores.map(p => `<option value="${p.id}">${p.nombre} ${p.apellido}</option>`).join('');
+    const optsInst = generateSortedOptions(allData.instituciones, 'nombre');
+    const optsProf = generateSortedOptions(allData.profesores, p => `${p.nombre} ${p.apellido}`);
+    
+    // Crear checkboxes de materias ordenadas alfabéticamente
+    const materiasCheckboxes = (allData.materias || [])
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+      .map(m => `
+        <label style="display: flex; align-items: center; gap: 8px; padding: 8px; background: #f8f9fa; border-radius: 6px; cursor: pointer; transition: all 0.2s;" 
+               onmouseover="this.style.background='#e9ecef'" 
+               onmouseout="this.style.background='#f8f9fa'">
+          <input type="checkbox" name="materias[]" value="${m.id}" style="width: 18px; height: 18px; cursor: pointer;">
+          <span style="flex: 1;">${m.nombre}</span>
+        </label>
+      `).join('');
     
     openModal(`
-      <div class="modal-card modal-narrow">
+      <div class="modal-card" style="max-width: 650px;">
         <div class="modal-header">
           <h2><i class="fas fa-door-open"></i> Nueva Aula</h2>
           <button onclick="closeModal()" class="btn-close"><i class="fas fa-times"></i></button>
@@ -1112,12 +1135,12 @@ function setupNewAula() {
         <div class="modal-body">
           <form id="formAula">
             <div class="form-group">
-              <label><i class="fas fa-tag"></i> Nombre</label>
-              <input type="text" name="nombre" required>
+              <label><i class="fas fa-tag"></i> Nombre del Aula</label>
+              <input type="text" name="nombre" required placeholder="Ej: 1ero A, 2do B, etc.">
             </div>
             <div class="form-group">
               <label><i class="fas fa-graduation-cap"></i> Grado</label>
-              <input type="text" name="grado">
+              <input type="text" name="grado" placeholder="Ej: 1er Año, 2do Año, etc.">
             </div>
             <div class="form-group">
               <label><i class="fas fa-building"></i> Institución</label>
@@ -1127,13 +1150,29 @@ function setupNewAula() {
               </select>
             </div>
             <div class="form-group">
-              <label><i class="fas fa-chalkboard-teacher"></i> Profesor</label>
+              <label><i class="fas fa-chalkboard-teacher"></i> Profesor Tutor</label>
               <select name="profesor_id">
-                <option value="">Ninguno</option>
+                <option value="">Sin profesor asignado</option>
                 ${optsProf}
               </select>
             </div>
-            <button type="submit" class="btn primary"><i class="fas fa-save"></i> Guardar</button>
+            
+            <hr style="margin: 20px 0; border: none; border-top: 2px solid #e9ecef;">
+            
+            <div class="form-group">
+              <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <i class="fas fa-book"></i> 
+                <span>Materias a Asignar (Opcional)</span>
+                <small style="color: #6c757d; font-weight: normal;">(Puedes asignarlas después también)</small>
+              </label>
+              <div style="max-height: 200px; overflow-y: auto; border: 2px solid #dee2e6; border-radius: 8px; padding: 10px; display: grid; gap: 8px;">
+                ${materiasCheckboxes || '<p style="color: #6c757d; text-align: center; padding: 10px;">No hay materias disponibles. Crea materias primero.</p>'}
+              </div>
+            </div>
+            
+            <button type="submit" class="btn primary" style="width: 100%; margin-top: 10px;">
+              <i class="fas fa-save"></i> Crear Aula
+            </button>
           </form>
         </div>
       </div>
@@ -1144,21 +1183,58 @@ function setupNewAula() {
       const fd = new FormData(e.target);
       const data = Object.fromEntries(fd);
       
+      // Obtener las materias seleccionadas
+      const materiasSeleccionadas = Array.from(document.querySelectorAll('input[name="materias[]"]:checked'))
+        .map(cb => cb.value);
+      
       try {
+        // Primero crear el aula
         const res = await fetch('api.php?action=add_aula', {
           method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         });
         const result = await res.json();
         
         if (result.ok) {
-          showToast('Aula agregada', 'success');
+          // Si hay materias seleccionadas, asignarlas
+          if (materiasSeleccionadas.length > 0) {
+            // Recargar datos para obtener el ID del aula recién creada
+            await loadAll();
+            
+            // Buscar el aula recién creada (la última con ese nombre)
+            const aulaCreada = allData.aulas
+              .filter(a => a.nombre === data.nombre && a.institucion_id == data.institucion_id)
+              .sort((a, b) => b.id - a.id)[0];
+            
+            if (aulaCreada) {
+              // Asignar cada materia seleccionada
+              for (const materiaId of materiasSeleccionadas) {
+                try {
+                  await fetch('api.php?action=add_aula_materia', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      aula_id: aulaCreada.id,
+                      materia_id: materiaId,
+                      profesor_id: data.profesor_id || null
+                    })
+                  });
+                } catch (err) {
+                  console.error('Error asignando materia:', err);
+                }
+              }
+            }
+          }
+          
+          showToast(`Aula creada${materiasSeleccionadas.length > 0 ? ' con ' + materiasSeleccionadas.length + ' materia(s)' : ''}`, 'success');
           closeModal();
-          loadAll();
+          await loadAll();
         } else {
-          showToast('Error', 'error');
+          showToast(result.error || 'Error al crear aula', 'error');
         }
       } catch (error) {
+        console.error('Error:', error);
         showToast('Error de conexión', 'error');
       }
     });
@@ -1167,7 +1243,7 @@ function setupNewAula() {
 
 function setupNewAlumno() {
   document.getElementById('newAlumnoBtn').addEventListener('click', () => {
-    const optsInst = allData.instituciones.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
+    const optsInst = generateSortedOptions(allData.instituciones, 'nombre');
     
     openModal(`
       <div class="modal-card modal-narrow">
@@ -1180,7 +1256,7 @@ function setupNewAlumno() {
             <div class="form-group">
               <label><i class="fas fa-building"></i> 1. Institución</label>
               <select id="selInstAlumno" required>
-                <option value="">Seleccione...</option>
+                <option value="">-- Seleccione una institución --</option>
                 ${optsInst}
               </select>
             </div>
@@ -1205,7 +1281,7 @@ function setupNewAlumno() {
             </div>
             <div class="form-group">
               <label><i class="fas fa-calendar"></i> Edad</label>
-              <input type="number" name="edad" required>
+              <input type="number" name="edad" required min="1" max="99">
             </div>
             <div class="form-group">
               <label><i class="fas fa-venus-mars"></i> Género</label>
@@ -1216,22 +1292,24 @@ function setupNewAlumno() {
                 <option value="Otro">Otro</option>
               </select>
             </div>
-            <button type="submit" class="btn primary"><i class="fas fa-save"></i> Guardar</button>
+            <button type="submit" class="btn primary"><i class="fas fa-save"></i> Guardar Alumno</button>
           </form>
         </div>
       </div>
     `);
     
-    // Filtrar aulas por institución
+    // Filtrar aulas por institución (con orden alfabético)
     document.getElementById('selInstAlumno').addEventListener('change', (e) => {
       const instId = e.target.value;
       const aulaGroup = document.getElementById('aulaGroupAlumno');
       const selAula = document.getElementById('selAulaAlumno');
       
       if (instId) {
-        const aulasInst = allData.aulas.filter(a => a.institucion_id == instId);
-        const opts = aulasInst.map(a => `<option value="${a.id}">${a.nombre} - ${a.grado||''}</option>`).join('');
-        selAula.innerHTML = '<option value="">Seleccione...</option>' + opts;
+        const aulasInst = allData.aulas
+          .filter(a => a.institucion_id == instId)
+          .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+        const opts = aulasInst.map(a => `<option value="${a.id}">${a.nombre}${a.grado ? ' - ' + a.grado : ''}</option>`).join('');
+        selAula.innerHTML = '<option value="">Seleccione un aula...</option>' + opts;
         aulaGroup.style.display = 'block';
       } else {
         aulaGroup.style.display = 'none';
@@ -1266,7 +1344,7 @@ function setupNewAlumno() {
 
 function setupNewPrueba() {
   document.getElementById('newPruebaBtn').addEventListener('click', () => {
-    const optsInst = allData.instituciones.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
+    const optsInst = generateSortedOptions(allData.instituciones, 'nombre');
     
     openModal(`
       <div class="modal-card modal-narrow">
@@ -1279,7 +1357,7 @@ function setupNewPrueba() {
             <div class="form-group">
               <label><i class="fas fa-building"></i> 1. Seleccione Institución</label>
               <select id="selInstPrueba" required>
-                <option value="">-- Seleccione --</option>
+                <option value="">-- Seleccione una institución --</option>
                 ${optsInst}
               </select>
             </div>
@@ -1302,15 +1380,16 @@ function setupNewPrueba() {
               <hr>
               <div class="form-group">
                 <label><i class="fas fa-tag"></i> Nombre de la Prueba</label>
-                <input type="text" name="nombre" required>
+                <input type="text" name="nombre" required placeholder="Ej: Parcial 1, Recuperatorio, etc.">
               </div>
               <div class="form-group">
                 <label><i class="fas fa-calendar"></i> Fecha</label>
                 <input type="date" name="fecha" required>
               </div>
               <div class="form-group">
-                <label><i class="fas fa-weight"></i> Peso (%)</label>
-                <input type="number" name="peso" min="0" max="100" step="0.1" required>
+                <label><i class="fas fa-weight"></i> Peso</label>
+                <input type="number" name="peso" min="0.1" max="10" step="0.1" value="1" required>
+                <small style="color: #6c757d;">Peso de la prueba para el promedio (por defecto: 1)</small>
               </div>
               <input type="hidden" name="aula_materia_id" id="aulaMateriId">
               <button type="submit" class="btn primary"><i class="fas fa-save"></i> Crear Prueba</button>
@@ -1327,9 +1406,14 @@ function setupNewPrueba() {
       document.getElementById('step4').style.display = 'none';
       
       if (instId) {
-        const aulasInst = allData.aulas.filter(a => a.institucion_id == instId);
-        const opts = aulasInst.map(a => `<option value="${a.id}">${a.nombre}</option>`).join('');
-        document.getElementById('selAulaPrueba').innerHTML = '<option value="">-- Seleccione --</option>' + opts;
+        const aulasInst = allData.aulas
+          .filter(a => a.institucion_id == instId)
+          .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+        const opts = aulasInst.map(a => {
+          const numMaterias = allData.aula_materia.filter(am => am.aula_id == a.id).length;
+          return `<option value="${a.id}">${a.nombre}${a.grado ? ' - ' + a.grado : ''} (${numMaterias} materia${numMaterias !== 1 ? 's' : ''})</option>`;
+        }).join('');
+        document.getElementById('selAulaPrueba').innerHTML = '<option value="">-- Seleccione un aula --</option>' + opts;
         document.getElementById('step2').style.display = 'block';
       }
     });
@@ -1341,16 +1425,42 @@ function setupNewPrueba() {
       
       if (aulaId) {
         const materias_aula = allData.aula_materia.filter(am => am.aula_id == aulaId);
-        const opts = materias_aula.map(am => {
-          const mat = allData.materias.find(m => m.id == am.materia_id);
-          return mat ? `<option value="${am.id}">${mat.nombre}</option>` : '';
-        }).join('');
         
-        if (opts) {
-          document.getElementById('selMateriaPrueba').innerHTML = '<option value="">-- Seleccione --</option>' + opts;
+        if (materias_aula.length === 0) {
+          document.getElementById('selMateriaPrueba').innerHTML = '<option value="">⚠️ Esta aula no tiene materias asignadas</option>';
           document.getElementById('step3').style.display = 'block';
+          // Agregar acceso directo para asignar materias desde aquí
+          const ctaId = 'btnAsignarMateriasDesdePrueba';
+          if (!document.getElementById(ctaId)) {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = `
+              <div class="form-group">
+                <button type="button" id="${ctaId}" class="btn primary">
+                  <i class="fas fa-plus-circle"></i> Asignar materias a este aula
+                </button>
+              </div>`;
+            document.getElementById('step3').appendChild(wrapper.firstElementChild);
+            document.getElementById(ctaId).addEventListener('click', () => {
+              closeModal();
+              setTimeout(() => gestionarMateriasAula(aulaId), 80);
+            });
+          }
+          showToast('Esta aula no tiene materias. Por favor asigna materias primero.', 'warning');
         } else {
-          document.getElementById('selMateriaPrueba').innerHTML = '<option value="">Esta aula no tiene materias</option>';
+          // Ordenar materias alfabéticamente
+          const materiasOrdenadas = materias_aula
+            .map(am => {
+              const mat = allData.materias.find(m => m.id == am.materia_id);
+              return mat ? { id: am.id, nombre: mat.nombre } : null;
+            })
+            .filter(m => m !== null)
+            .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+          
+          const opts = materiasOrdenadas
+            .map(m => `<option value="${m.id}">${m.nombre}</option>`)
+            .join('');
+          
+          document.getElementById('selMateriaPrueba').innerHTML = '<option value="">-- Seleccione una materia --</option>' + opts;
           document.getElementById('step3').style.display = 'block';
         }
       }
@@ -1394,8 +1504,17 @@ function setupNewPrueba() {
 
 function setupNewNota() {
   document.getElementById('newNotaBtn').addEventListener('click', () => {
-    const optsPruebas = allData.pruebas.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
-    const optsAlumnos = allData.alumnos.map(a => `<option value="${a.id}">${a.nombre} ${a.apellido}</option>`).join('');
+    const optsPruebas = allData.pruebas
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+      .map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+    
+    const optsAlumnos = allData.alumnos
+      .sort((a, b) => {
+        const nombreA = `${a.apellido} ${a.nombre}`.toLowerCase();
+        const nombreB = `${b.apellido} ${b.nombre}`.toLowerCase();
+        return nombreA.localeCompare(nombreB, 'es');
+      })
+      .map(a => `<option value="${a.id}">${a.apellido}, ${a.nombre} - DNI: ${a.dni}</option>`).join('');
     
     openModal(`
       <div class="modal-card modal-narrow">
@@ -1407,15 +1526,18 @@ function setupNewNota() {
           <form id="formNota">
             <div class="form-group">
               <label><i class="fas fa-file-alt"></i> Prueba</label>
-              <select name="prueba_id" required>
-                <option value="">Seleccione...</option>
+              <select name="prueba_id" id="selPruebaNota" required>
+                <option value="">Seleccione una prueba...</option>
                 ${optsPruebas}
               </select>
             </div>
             <div class="form-group">
               <label><i class="fas fa-user-graduate"></i> Alumno</label>
-              <select name="alumno_id" required>
-                <option value="">Seleccione...</option>
+              <input type="text" id="searchAlumnoNota" placeholder="🔍 Buscar alumno por nombre o DNI..." 
+                     style="width: 100%; padding: 10px; border: 2px solid #dee2e6; border-radius: 8px; margin-bottom: 10px;">
+              <select name="alumno_id" id="selAlumnoNota" required size="8" 
+                      style="width: 100%; border: 2px solid #dee2e6; border-radius: 8px;">
+                <option value="">-- Seleccione un alumno --</option>
                 ${optsAlumnos}
               </select>
             </div>
@@ -1423,11 +1545,35 @@ function setupNewNota() {
               <label><i class="fas fa-star"></i> Nota (0-10)</label>
               <input type="number" name="nota" min="0" max="10" step="0.1" required>
             </div>
-            <button type="submit" class="btn primary"><i class="fas fa-save"></i> Guardar</button>
+            <button type="submit" class="btn primary"><i class="fas fa-save"></i> Guardar Nota</button>
           </form>
         </div>
       </div>
     `);
+    
+    // Buscador de alumnos en tiempo real
+    const searchInput = document.getElementById('searchAlumnoNota');
+    const selectAlumno = document.getElementById('selAlumnoNota');
+    const allOptions = Array.from(selectAlumno.options);
+    
+    searchInput.addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      
+      // Limpiar select
+      selectAlumno.innerHTML = '';
+      
+      // Filtrar y agregar opciones que coincidan
+      const filtered = allOptions.filter(opt => {
+        if (opt.value === '') return true; // Mantener opción por defecto
+        return opt.text.toLowerCase().includes(searchTerm);
+      });
+      
+      filtered.forEach(opt => selectAlumno.add(opt.cloneNode(true)));
+      
+      if (filtered.length === 1) {
+        selectAlumno.innerHTML = '<option value="">No se encontraron alumnos</option>';
+      }
+    });
     
     document.getElementById('formNota').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -1564,17 +1710,31 @@ function openEditAula(aula){
   const optsProf = allData.profesores.map(p => `<option value="${p.id}" ${Number(aula.profesor_id)===Number(p.id)?'selected':''}>${p.nombre} ${p.apellido}</option>`).join('');
   openModal(`
     <div class="modal-card"><div class="modal-header"><h2><i class="fas fa-door-open"></i> Editar Aula</h2><button onclick="closeModal()" class="btn-close"><i class="fas fa-times"></i></button></div>
-    <div class="modal-body"><form id="formEditAula">
-      <div class="form-group"><label><i class="fas fa-tag"></i> Nombre</label><input name="nombre" value="${aula.nombre||''}" required></div>
-      <div class="form-group"><label><i class="fas fa-graduation-cap"></i> Grado</label><input name="grado" value="${aula.grado||''}"></div>
-      <div class="form-group"><label><i class="fas fa-building"></i> Institución</label><select name="institucion_id" required><option value="">Seleccione...</option>${optsInst}</select></div>
-      <div class="form-group"><label><i class="fas fa-chalkboard-teacher"></i> Profesor</label><select name="profesor_id"><option value="">Ninguno</option>${optsProf}</select></div>
-      <button class="btn primary" type="submit"><i class="fas fa-save"></i> Guardar</button>
-    </form></div></div>`);
+    <div class="modal-body">
+      <div class="form-group" style="display:flex; gap:10px; align-items:center; justify-content:flex-end;">
+        <button type="button" id="btnGestionarMateriasAula" class="btn secondary">
+          <i class="fas fa-book"></i> Gestionar materias
+        </button>
+      </div>
+      <form id="formEditAula">
+        <div class="form-group"><label><i class="fas fa-tag"></i> Nombre</label><input name="nombre" value="${aula.nombre||''}" required></div>
+        <div class="form-group"><label><i class="fas fa-graduation-cap"></i> Grado</label><input name="grado" value="${aula.grado||''}"></div>
+        <div class="form-group"><label><i class="fas fa-building"></i> Institución</label><select name="institucion_id" required><option value="">Seleccione...</option>${optsInst}</select></div>
+        <div class="form-group"><label><i class="fas fa-chalkboard-teacher"></i> Profesor</label><select name="profesor_id"><option value="">Ninguno</option>${optsProf}</select></div>
+        <button class="btn primary" type="submit"><i class="fas fa-save"></i> Guardar</button>
+      </form>
+    </div></div>`);
   document.getElementById('formEditAula').addEventListener('submit', async (e)=>{
     e.preventDefault(); const data=Object.fromEntries(new FormData(e.target));
     try{ const r=await fetch(`api.php?action=update_aula&id=${aula.id}`,{method:'POST', body: JSON.stringify(data)}); const j=await r.json(); if(j.ok){ showToast('Actualizado','success'); closeModal(); loadAll(); } else { showToast('Error','error'); } }catch(err){ showToast('Error de conexión','error'); }
   });
+  const btnGM = document.getElementById('btnGestionarMateriasAula');
+  if (btnGM) {
+    btnGM.addEventListener('click', () => {
+      closeModal();
+      setTimeout(()=> gestionarMateriasAula(aula.id), 80);
+    });
+  }
 }
 
 function openEditAlumno(al){
@@ -1720,6 +1880,172 @@ window.confirmDeleteFromFullView = async function(entity, id){
     }
   } catch(e) { 
     showToast('Error de conexión', 'error'); 
+  }
+}
+
+// ========================================
+// GESTIONAR MATERIAS DE UN AULA
+// ========================================
+window.gestionarMateriasAula = function(aulaId) {
+  const aula = (allData?.aulas || []).find(a => a.id == aulaId);
+  if (!aula) {
+    showToast('Aula no encontrada', 'error');
+    return;
+  }
+  
+  // Obtener materias asignadas
+  const materiasAsignadas = (allData.aula_materia || []).filter(am => am.aula_id == aulaId);
+  
+  // Crear HTML de materias asignadas
+  let htmlAsignadas = '';
+  if (materiasAsignadas.length === 0) {
+    htmlAsignadas = '<p style="text-align: center; color: #999; padding: 20px; font-style: italic;"><i class="fas fa-inbox"></i><br>No hay materias asignadas</p>';
+  } else {
+    htmlAsignadas = '<div style="display: grid; gap: 10px;">';
+    materiasAsignadas.forEach(am => {
+      const materia = (allData.materias || []).find(m => m.id == am.materia_id);
+      const profesor = (allData.profesores || []).find(p => p.id == am.profesor_id);
+      htmlAsignadas += `
+        <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid #8b5cf6; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong>${materia ? materia.nombre : 'Materia desconocida'}</strong><br>
+            <small style="color: #666;">${profesor ? profesor.nombre + ' ' + profesor.apellido : 'Sin profesor'}</small>
+          </div>
+          <button class="btn-mini del" onclick="eliminarMateriaDeAula(${am.id}, ${aulaId})" title="Eliminar">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      `;
+    });
+    htmlAsignadas += '</div>';
+  }
+  
+  // Obtener materias disponibles (no asignadas)
+  const idsAsignadas = materiasAsignadas.map(am => am.materia_id);
+  const materiasDisponibles = (allData.materias || [])
+    .filter(m => !idsAsignadas.includes(m.id))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  
+  let optsDisponibles = '';
+  if (materiasDisponibles.length === 0) {
+    optsDisponibles = '<option value="">Todas las materias están asignadas</option>';
+  } else {
+    optsDisponibles = '<option value="">-- Selecciona una materia --</option>';
+    materiasDisponibles.forEach(m => {
+      optsDisponibles += `<option value="${m.id}">${m.nombre}</option>`;
+    });
+  }
+  
+  const optsProfesores = '<option value="">Sin profesor</option>' + 
+    generateSortedOptions(allData.profesores || [], p => `${p.nombre} ${p.apellido}`);
+  
+  openModal(`
+    <div class="modal-card" style="max-width: 650px;">
+      <div class="modal-header">
+        <h2><i class="fas fa-book"></i> Gestionar Materias - ${aula.nombre}</h2>
+        <button onclick="closeModal()" class="btn-close"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Materias Asignadas -->
+        <h3 style="color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #8b5cf6; padding-bottom: 8px;">
+          <i class="fas fa-list"></i> Materias Asignadas
+        </h3>
+        ${htmlAsignadas}
+        
+        <hr style="margin: 25px 0; border: none; border-top: 2px solid #e9ecef;">
+        
+        <!-- Asignar Nueva Materia -->
+        <div style="background: #f0f4ff; padding: 20px; border-radius: 10px; border: 2px solid #8b5cf6;">
+          <h3 style="color: #2c3e50; margin-bottom: 15px;">
+            <i class="fas fa-plus-circle"></i> Asignar Nueva Materia
+          </h3>
+          <form id="formAsignarMateria">
+            <input type="hidden" name="aula_id" value="${aulaId}">
+            
+            <div class="form-group">
+              <label><i class="fas fa-book"></i> Materia</label>
+              <select name="materia_id" required ${materiasDisponibles.length === 0 ? 'disabled' : ''}>
+                ${optsDisponibles}
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label><i class="fas fa-chalkboard-teacher"></i> Profesor (Opcional)</label>
+              <select name="profesor_id" ${materiasDisponibles.length === 0 ? 'disabled' : ''}>
+                ${optsProfesores}
+              </select>
+            </div>
+            
+            <button type="submit" class="btn primary" ${materiasDisponibles.length === 0 ? 'disabled' : ''} 
+                    style="width: 100%;">
+              <i class="fas fa-plus"></i> Asignar Materia
+            </button>
+          </form>
+        </div>
+        
+      </div>
+    </div>
+  `);
+  
+  // Handler para asignar materia
+  document.getElementById('formAsignarMateria').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const data = Object.fromEntries(fd);
+    
+    try {
+      const res = await fetch('api.php?action=add_aula_materia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      
+      if (result.ok) {
+        showToast('Materia asignada correctamente', 'success');
+        await loadAll();
+        gestionarMateriasAula(aulaId); // Reabrir modal actualizado
+      } else {
+        showToast(result.error || 'Error al asignar materia', 'error');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showToast('Error de conexión', 'error');
+    }
+  });
+}
+
+window.eliminarMateriaDeAula = async function(aulaMateriaId, aulaId) {
+  if (typeof Swal !== 'undefined') {
+    const res = await Swal.fire({
+      title: '¿Eliminar materia?',
+      text: 'Esta acción eliminará la materia del aula',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#e74c3c'
+    });
+    if (!res.isConfirmed) return;
+  } else {
+    if (!confirm('¿Eliminar esta materia del aula?')) return;
+  }
+  
+  try {
+    const res = await fetch(`api.php?action=delete_aula_materia&id=${aulaMateriaId}`);
+    const result = await res.json();
+    
+    if (result.ok) {
+      showToast('Materia eliminada', 'success');
+      await loadAll();
+      gestionarMateriasAula(aulaId); // Reabrir modal actualizado
+    } else {
+      showToast('Error al eliminar', 'error');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    showToast('Error de conexión', 'error');
   }
 }
 
