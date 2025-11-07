@@ -214,9 +214,25 @@ if($action=='update_profesor' && isset($_GET['id'])){
 }
 
 if($action=='update_materia' && isset($_GET['id'])){
-  $id = intval($_GET['id']); $n=esc($input['nombre']??'');
+  $id = intval($_GET['id']);
+  $n_raw = trim($input['nombre'] ?? '');
+  $n = esc($n_raw);
+
+  if($n_raw === ''){
+    echo json_encode(["ok"=>0, "error"=>"El nombre es obligatorio"]); exit;
+  }
+
+  // Validar nombre único (ignorando el mismo registro)
+  $check = $mysqli->query("SELECT id FROM materias WHERE nombre='{$n}' AND id != {$id}");
+  if($check && $check->num_rows > 0){
+    echo json_encode(["ok"=>0, "error"=>"Ya existe una materia con ese nombre"]); exit;
+  }
+
   $ok = $mysqli->query("UPDATE materias SET nombre='{$n}' WHERE id={$id}");
-  echo json_encode(["ok"=> $ok?1:0]); exit;
+  if(!$ok){
+    echo json_encode(["ok"=>0, "error"=>"Error SQL: ".$mysqli->error]); exit;
+  }
+  echo json_encode(["ok"=>1]); exit;
 }
 
 if($action=='update_aula' && isset($_GET['id'])){

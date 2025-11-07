@@ -1701,7 +1701,7 @@ function openEditMateria(mat){
     </form></div></div>`);
   document.getElementById('formEditMateria').addEventListener('submit', async (e)=>{
     e.preventDefault(); const data=Object.fromEntries(new FormData(e.target));
-    try{ const r=await fetch(`api.php?action=update_materia&id=${mat.id}`,{method:'POST', body: JSON.stringify(data)}); const j=await r.json(); if(j.ok){ showToast('Actualizado','success'); closeModal(); loadAll(); } else { showToast('Error','error'); } }catch(err){ showToast('Error de conexión','error'); }
+    try{ const r=await fetch(`api.php?action=update_materia&id=${mat.id}`,{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)}); const j=await r.json(); if(j.ok){ showToast('Actualizado','success'); closeModal(); loadAll(); } else { showToast(j.error||'Error','error'); } }catch(err){ showToast('Error de conexión','error'); }
   });
 }
 
